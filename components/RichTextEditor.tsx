@@ -1,5 +1,5 @@
 "use dom";
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type BlockType =
@@ -57,17 +57,17 @@ function serializeBlocks(blocks: Block[]): string {
   return blocks
     .map((b) => {
       switch (b.type) {
-        case 'paragraph':    return `<p>${b.html}</p>`;
-        case 'heading1':     return `<h1>${b.html}</h1>`;
-        case 'heading2':     return `<h2>${b.html}</h2>`;
-        case 'heading3':     return `<h3>${b.html}</h3>`;
-        case 'bulletList':   return `<ul><li>${b.html}</li></ul>`;
+        case 'paragraph': return `<p>${b.html}</p>`;
+        case 'heading1': return `<h1>${b.html}</h1>`;
+        case 'heading2': return `<h2>${b.html}</h2>`;
+        case 'heading3': return `<h3>${b.html}</h3>`;
+        case 'bulletList': return `<ul><li>${b.html}</li></ul>`;
         case 'numberedList': return `<ol><li>${b.html}</li></ol>`;
-        case 'checklist':    return `<div class="checklist-item" data-checked="${b.checked}"><input type="checkbox" ${b.checked ? 'checked' : ''}/><span>${b.html}</span></div>`;
-        case 'blockquote':   return `<blockquote>${b.html}</blockquote>`;
-        case 'code':         return `<pre><code>${b.html}</code></pre>`;
-        case 'divider':      return `<hr/>`;
-        default:             return `<p>${b.html}</p>`;
+        case 'checklist': return `<div class="checklist-item" data-checked="${b.checked}"><input type="checkbox" ${b.checked ? 'checked' : ''}/><span>${b.html}</span></div>`;
+        case 'blockquote': return `<blockquote>${b.html}</blockquote>`;
+        case 'code': return `<pre><code>${b.html}</code></pre>`;
+        case 'divider': return `<hr/>`;
+        default: return `<p>${b.html}</p>`;
       }
     })
     .join('\n');
@@ -82,31 +82,31 @@ function parseInitialContent(html: string): Block[] {
 
 function getPlaceholder(type: BlockType, isFirst: boolean): string {
   switch (type) {
-    case 'paragraph':    return isFirst ? "Start writing, or type '/' for commands…" : "Type '/' for commands…";
-    case 'heading1':     return 'Heading 1';
-    case 'heading2':     return 'Heading 2';
-    case 'heading3':     return 'Heading 3';
-    case 'bulletList':   return 'List item';
+    case 'paragraph': return isFirst ? "Start writing, or type '/' for commands…" : "Type '/' for commands…";
+    case 'heading1': return 'Heading 1';
+    case 'heading2': return 'Heading 2';
+    case 'heading3': return 'Heading 3';
+    case 'bulletList': return 'List item';
     case 'numberedList': return 'List item';
-    case 'checklist':    return 'To-do item';
-    case 'blockquote':   return 'Quote something…';
-    case 'code':         return '// Write code here…';
-    default:             return '';
+    case 'checklist': return 'To-do item';
+    case 'blockquote': return 'Quote something…';
+    case 'code': return '// Write code here…';
+    default: return '';
   }
 }
 
 // ─── Slash commands ───────────────────────────────────────────────────────────
 const SLASH_COMMANDS = [
-  { type: 'paragraph'    as BlockType, label: 'Text',          icon: '¶',  desc: 'Plain paragraph'    },
-  { type: 'heading1'     as BlockType, label: 'Heading 1',     icon: 'H1', desc: 'Large section title' },
-  { type: 'heading2'     as BlockType, label: 'Heading 2',     icon: 'H2', desc: 'Medium heading'      },
-  { type: 'heading3'     as BlockType, label: 'Heading 3',     icon: 'H3', desc: 'Small heading'       },
-  { type: 'bulletList'   as BlockType, label: 'Bullet List',   icon: '•',  desc: 'Unordered list'      },
-  { type: 'numberedList' as BlockType, label: 'Numbered List', icon: '1.', desc: 'Ordered list'        },
-  { type: 'checklist'    as BlockType, label: 'Checklist',     icon: '☑',  desc: 'To-do list'          },
-  { type: 'blockquote'   as BlockType, label: 'Quote',         icon: '"',  desc: 'Blockquote'          },
-  { type: 'code'         as BlockType, label: 'Code',          icon: '<>', desc: 'Code block'           },
-  { type: 'divider'      as BlockType, label: 'Divider',       icon: '—',  desc: 'Horizontal rule'     },
+  { type: 'paragraph' as BlockType, label: 'Text', icon: '¶', desc: 'Plain paragraph' },
+  { type: 'heading1' as BlockType, label: 'Heading 1', icon: 'H1', desc: 'Large section title' },
+  { type: 'heading2' as BlockType, label: 'Heading 2', icon: 'H2', desc: 'Medium heading' },
+  { type: 'heading3' as BlockType, label: 'Heading 3', icon: 'H3', desc: 'Small heading' },
+  { type: 'bulletList' as BlockType, label: 'Bullet List', icon: '•', desc: 'Unordered list' },
+  { type: 'numberedList' as BlockType, label: 'Numbered List', icon: '1.', desc: 'Ordered list' },
+  { type: 'checklist' as BlockType, label: 'Checklist', icon: '☑', desc: 'To-do list' },
+  { type: 'blockquote' as BlockType, label: 'Quote', icon: '"', desc: 'Blockquote' },
+  { type: 'code' as BlockType, label: 'Code', icon: '<>', desc: 'Code block' },
+  { type: 'divider' as BlockType, label: 'Divider', icon: '—', desc: 'Horizontal rule' },
 ];
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -133,8 +133,8 @@ export default function RichTextEditor({
   const isLight = !isDark;
   const borderColor = isLight ? `${tc}22` : `${tc}33`;
   const surfaceColor = isLight ? `${tc}06` : `${tc}12`;
-  const hoverColor   = isLight ? `${tc}10` : `${tc}20`;
-  const accentColor  = '#6c63ff';
+  const hoverColor = isLight ? `${tc}10` : `${tc}20`;
+  const accentColor = '#6c63ff';
 
   // ─── Notify parent ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -149,7 +149,7 @@ export default function RichTextEditor({
       el.focus();
       if (toEnd) {
         const range = document.createRange();
-        const sel   = window.getSelection();
+        const sel = window.getSelection();
         range.selectNodeContents(el);
         range.collapse(false);
         sel?.removeAllRanges();
@@ -161,9 +161,9 @@ export default function RichTextEditor({
   // ─── Sync active format state on every selection change ───────────────────
   const updateFormats = useCallback(() => {
     setActiveFormats({
-      bold:          document.queryCommandState('bold'),
-      italic:        document.queryCommandState('italic'),
-      underline:     document.queryCommandState('underline'),
+      bold: document.queryCommandState('bold'),
+      italic: document.queryCommandState('italic'),
+      underline: document.queryCommandState('underline'),
       strikethrough: document.queryCommandState('strikeThrough'),
     });
 
@@ -173,7 +173,7 @@ export default function RichTextEditor({
       return;
     }
     const range = sel.getRangeAt(0);
-    const rect  = range.getBoundingClientRect();
+    const rect = range.getBoundingClientRect();
     if (rect.width === 0) {
       setInlineToolbar(t => ({ ...t, visible: false }));
       return;
@@ -213,7 +213,7 @@ export default function RichTextEditor({
     // Slash detection
     if (sel?.focusNode) {
       const textBefore = sel.focusNode.textContent?.slice(0, sel.focusOffset) ?? '';
-      const slashIdx   = textBefore.lastIndexOf('/');
+      const slashIdx = textBefore.lastIndexOf('/');
       if (
         slashIdx !== -1 &&
         (slashIdx === 0 || /\s/.test(textBefore[slashIdx - 1]))
@@ -238,7 +238,7 @@ export default function RichTextEditor({
   // ─── Keyboard handler ──────────────────────────────────────────────────────
   const handleBlockKeyDown = useCallback((e: React.KeyboardEvent<HTMLElement>, id: string) => {
     const blockIdx = blocks.findIndex(b => b.id === id);
-    const block    = blocks[blockIdx];
+    const block = blocks[blockIdx];
     if (!block) return;
 
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -259,7 +259,7 @@ export default function RichTextEditor({
     }
 
     if (e.key === 'Backspace') {
-      const el   = blockRefs.current[id];
+      const el = blockRefs.current[id];
       const text = el?.textContent?.trim() ?? '';
       const html = el?.innerHTML?.replace(/<br\s*\/?>/gi, '').trim() ?? '';
       if (!text && !html && blocks.length > 1) {
@@ -281,9 +281,9 @@ export default function RichTextEditor({
       }
     }
     if (e.key === 'ArrowDown' && blockIdx < blocks.length - 1) {
-      const el      = blockRefs.current[id];
+      const el = blockRefs.current[id];
       const textLen = el?.textContent?.length ?? 0;
-      const sel     = window.getSelection();
+      const sel = window.getSelection();
       if (sel && sel.focusOffset >= textLen) {
         e.preventDefault();
         focusBlock(blocks[blockIdx + 1].id, false);
@@ -316,9 +316,9 @@ export default function RichTextEditor({
     }
     // Refresh active format indicators
     setActiveFormats({
-      bold:          document.queryCommandState('bold'),
-      italic:        document.queryCommandState('italic'),
-      underline:     document.queryCommandState('underline'),
+      bold: document.queryCommandState('bold'),
+      italic: document.queryCommandState('italic'),
+      underline: document.queryCommandState('underline'),
       strikethrough: document.queryCommandState('strikeThrough'),
     });
   }, []);
@@ -329,9 +329,9 @@ export default function RichTextEditor({
     const el = blockRefs.current[blockId];
     let cleanHtml = '';
     if (el && slashMenu?.blockId === blockId) {
-      const text     = el.textContent ?? '';
+      const text = el.textContent ?? '';
       const slashPos = text.lastIndexOf('/');
-      cleanHtml      = slashPos !== -1 ? text.slice(0, slashPos) : text;
+      cleanHtml = slashPos !== -1 ? text.slice(0, slashPos) : text;
     } else if (el) {
       cleanHtml = el.innerHTML;
     }
@@ -368,9 +368,9 @@ export default function RichTextEditor({
   // ─── Filtered slash commands ───────────────────────────────────────────────
   const filteredCmds = slashMenu
     ? SLASH_COMMANDS.filter(c =>
-        c.label.toLowerCase().includes(slashMenu.query.toLowerCase()) ||
-        c.desc.toLowerCase().includes(slashMenu.query.toLowerCase())
-      )
+      c.label.toLowerCase().includes(slashMenu.query.toLowerCase()) ||
+      c.desc.toLowerCase().includes(slashMenu.query.toLowerCase())
+    )
     : SLASH_COMMANDS;
 
   // ─── Common editable props (no dangerouslySetInnerHTML) ───────────────────
@@ -431,7 +431,6 @@ export default function RichTextEditor({
             <div
               ref={setBlockRef(block.id, block.html)}
               className="block-content code-content"
-              data-placeholder="// Write code here…"
               {...ep}
             />
           </pre>

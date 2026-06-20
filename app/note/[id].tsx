@@ -192,8 +192,7 @@ const styles = StyleSheet.create({
   editorWrapper: {
     flex: 1,
     marginTop: 8,
-    marginBottom: 16,
-    backgroundColor: 'green'
+    marginBottom: 16
   },
   bottomBar: {
     flexDirection: 'row',
