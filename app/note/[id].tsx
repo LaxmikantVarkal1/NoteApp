@@ -3,7 +3,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNoteStore } from '@/store/useNoteStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Palette, Pin, SquarePen, Trash2 } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -12,6 +12,10 @@ export default function NoteScreen() {
   const isNew = id === 'new';
   const insets = useSafeAreaInsets();
   const dimensios = useWindowDimensions();
+  const editorSizes = useMemo(() => ({
+    width: dimensios.width - 40,
+    height: dimensios.height - 390
+  }), [dimensios.width, dimensios.height]);
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -90,7 +94,8 @@ export default function NoteScreen() {
   };
 
   const currentBgColor = color || (isDark ? '#111' : '#FFF');
-  const iconColor = isDark ? '#ffffff87' : '#33333343';
+  const iconColor = isDark ? '#ffffff4c' : '#33333343';
+  const isActiveAction = isDark ? '#ffffffff' : '#000000ff';
 
   return (
     <View
@@ -102,13 +107,13 @@ export default function NoteScreen() {
         </TouchableOpacity>
         <View style={styles.headerActions}>
           <TouchableOpacity onPress={() => setShowFormatBar(!showFormatBar)} style={[styles.iconButton]}>
-            <SquarePen color={showFormatBar ? '#0a0a0aff' : iconColor} size={23} />
+            <SquarePen color={showFormatBar ? isActiveAction : iconColor} size={23} />
           </TouchableOpacity>
           <TouchableOpacity onPress={togglePinStatus} style={styles.iconButton}>
             <Pin color={pinned ? '#030303ff' : iconColor} size={24} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowPalette(!showPalette)} style={styles.iconButton}>
-            <Palette color={iconColor} size={24} />
+            <Palette color={showPalette ? isActiveAction : iconColor} size={24} />
           </TouchableOpacity>
           {!isNew && (
             <TouchableOpacity onPress={handleDelete} style={styles.iconButton}>
@@ -158,7 +163,7 @@ export default function NoteScreen() {
                 onPress={() => sendBlockType(type)}
                 style={[styles.fmtBtn]}
               >
-                <Text style={[styles.fmtBtnText, { color: isActive ? '#040303ff' : iconColor }, type !== 'paragraph' && { fontWeight: '700' }]}>{label}</Text>
+                <Text style={[styles.fmtBtnText, { color: isActive ? isActiveAction : iconColor }, type !== 'paragraph' && { fontWeight: '700' }]}>{label}</Text>
               </TouchableOpacity>
             );
           })}
@@ -175,15 +180,15 @@ export default function NoteScreen() {
               onPress={() => sendFormat(cmd)}
               style={[styles.fmtBtn]}
             >
-              <Text style={[styles.fmtBtnText, style, { color: isActive ? '#040303ff' : iconColor }]}>{label}</Text>
+              <Text style={[styles.fmtBtnText, style, { color: isActive ? isActiveAction : iconColor }]}>{label}</Text>
             </TouchableOpacity>
           ))}
         </View>}
         <View style={styles.editorWrapper}>
           <RichTextEditor
-            initialContent={content}
+            initialContent={existingNote?.content || ''}
             onChange={setContent}
-            sizes={{ width: dimensios.width - 40, height: dimensios.height - 390 }}
+            sizes={editorSizes}
             textColor={isDark ? '#FFF' : '#333'}
             backgroundColor={currentBgColor}
             formatCommand={formatCommand}
@@ -235,7 +240,7 @@ const styles = StyleSheet.create({
   paletteContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     gap: 12,
   },
   colorCircle: {

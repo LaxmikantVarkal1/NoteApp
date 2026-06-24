@@ -197,6 +197,12 @@ export default function RichTextEditor({
 
     // ── Inline format command ───────────────────────────────────────────────
     const restoreAndApply = () => {
+      if (focusedBlockId) {
+        const el = blockRefs.current[focusedBlockId];
+        if (el && el.getAttribute('contenteditable') === 'true') {
+          el.focus();
+        }
+      }
       if (savedRangeRef.current) {
         const sel = window.getSelection();
         sel?.removeAllRanges();
@@ -226,8 +232,7 @@ export default function RichTextEditor({
       }
     };
 
-    // Use rAF to ensure the WebView has had a chance to process
-    requestAnimationFrame(restoreAndApply);
+    restoreAndApply();
   }, [formatCommand]);
 
   // ─── Focus a block ─────────────────────────────────────────────────────────
@@ -288,8 +293,19 @@ export default function RichTextEditor({
     if (el && !initializedRefs.current.has(id)) {
       el.innerHTML = html;
       initializedRefs.current.add(id);
+
+      // Focus synchronously if this block is the currently focused block
+      if (focusedBlockId === id) {
+        el.focus();
+        const range = document.createRange();
+        const sel = window.getSelection();
+        range.selectNodeContents(el);
+        range.collapse(false);
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }
     }
-  }, []);
+  }, [focusedBlockId]);
 
   // When block TYPE changes we must re-sync the DOM content for that block
   // (the element may re-mount with a different tag)
@@ -365,9 +381,20 @@ export default function RichTextEditor({
         e.preventDefault();
         setSlashMenu(null);
         initializedRefs.current.delete(id);
-        setBlocks(prev => prev.filter(b => b.id !== id));
         const target = blocks[blockIdx - 1] ?? blocks[blockIdx + 1];
-        if (target) setTimeout(() => focusBlock(target.id), 20);
+        if (target) {
+          const targetEl = blockRefs.current[target.id];
+          if (targetEl && targetEl.getAttribute('contenteditable') === 'true') {
+            targetEl.focus();
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(targetEl);
+            range.collapse(false);
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+          }
+        }
+        setBlocks(prev => prev.filter(b => b.id !== id));
         return;
       }
     }
@@ -444,8 +471,7 @@ export default function RichTextEditor({
       return { ...b, type: newType, html: cleanHtml };
     }));
     setSlashMenu(null);
-    setTimeout(() => focusBlock(blockId), 40);
-  }, [slashMenu, focusBlock]);
+  }, [slashMenu]);
 
   // ─── Toggle checklist ──────────────────────────────────────────────────────
   const toggleChecklist = useCallback((id: string) => {
