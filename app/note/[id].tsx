@@ -2,9 +2,9 @@ import RichTextEditor from '@/components/RichTextEditor';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNoteStore } from '@/store/useNoteStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Palette, Pin, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, Palette, Pin, SquarePen, Trash2 } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function NoteScreen() {
@@ -24,6 +24,7 @@ export default function NoteScreen() {
   const [color, setColor] = useState('');
   const [pinned, setPinned] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
+  const [showFormatBar, setShowFormatBar] = useState(false);
   const [formatCommand, setFormatCommand] = useState<string | undefined>(undefined);
   const [activeBlockType, setActiveBlockType] = useState<string>('paragraph');
   const [activeInlineFormats, setActiveInlineFormats] = useState({
@@ -89,20 +90,22 @@ export default function NoteScreen() {
   };
 
   const currentBgColor = color || (isDark ? '#111' : '#FFF');
-  const iconColor = isDark ? '#FFF' : '#333';
+  const iconColor = isDark ? '#ffffff87' : '#33333343';
 
   return (
-    <KeyboardAvoidingView
+    <View
       style={[styles.container, { backgroundColor: currentBgColor, paddingTop: insets.top }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.header}>
         <TouchableOpacity onPress={handleSaveAndGoBack} style={styles.iconButton}>
           <ArrowLeft color={iconColor} size={24} />
         </TouchableOpacity>
         <View style={styles.headerActions}>
+          <TouchableOpacity onPress={() => setShowFormatBar(!showFormatBar)} style={[styles.iconButton]}>
+            <SquarePen color={showFormatBar ? '#0a0a0aff' : iconColor} size={23} />
+          </TouchableOpacity>
           <TouchableOpacity onPress={togglePinStatus} style={styles.iconButton}>
-            <Pin color={pinned ? '#FF6347' : iconColor} size={24} />
+            <Pin color={pinned ? '#030303ff' : iconColor} size={24} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowPalette(!showPalette)} style={styles.iconButton}>
             <Palette color={iconColor} size={24} />
@@ -112,6 +115,7 @@ export default function NoteScreen() {
               <Trash2 color={iconColor} size={24} />
             </TouchableOpacity>
           )}
+
         </View>
       </View>
 
@@ -127,6 +131,7 @@ export default function NoteScreen() {
         </View>
       )}
 
+
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={[styles.contentContainer, { flexGrow: 1 }]}
@@ -140,41 +145,41 @@ export default function NoteScreen() {
           onChangeText={setTitle}
           multiline
         />
-        <View style={styles.editorWrapper}>
-          {/* ── Native Formatting Toolbar ─────────────────────────── */}
-          <View style={[styles.formatBar, { borderBottomColor: isDark ? '#333' : '#E0E0E0', backgroundColor: isDark ? '#1A1A1A' : '#F8F9FA' }]}>
-            {/* Block type buttons */}
-            {(['paragraph', 'heading1', 'heading2', 'heading3'] as const).map((type) => {
-              const label = type === 'paragraph' ? 'T' : type === 'heading1' ? 'H1' : type === 'heading2' ? 'H2' : 'H3';
-              const isActive = activeBlockType === type;
-              return (
-                <TouchableOpacity
-                  key={type}
-                  onPress={() => sendBlockType(type)}
-                  style={[styles.fmtBtn, isActive && { backgroundColor: '#131314d5' }]}
-                >
-                  <Text style={[styles.fmtBtnText, { color: isActive ? '#ffffffff' : iconColor }, type !== 'paragraph' && { fontWeight: '700' }]}>{label}</Text>
-                </TouchableOpacity>
-              );
-            })}
 
-            <View style={styles.fmtSep} />
-            {([
-              { cmd: 'bold', label: 'B', isActive: activeInlineFormats.bold, style: { fontWeight: '700' as const } },
-              { cmd: 'italic', label: 'I', isActive: activeInlineFormats.italic, style: { fontStyle: 'italic' as const } },
-              { cmd: 'underline', label: 'U', isActive: activeInlineFormats.underline, style: { textDecorationLine: 'underline' as const } },
-              { cmd: 'strikeThrough', label: 'S', isActive: activeInlineFormats.strikethrough, style: { textDecorationLine: 'line-through' as const } },
-            ]).map(({ cmd, label, isActive, style }) => (
+        {/* ── Native Formatting Toolbar ─────────────────────────── */}
+        {showFormatBar && <View style={[styles.formatBar]}>
+          {/* Block type buttons */}
+          {(['paragraph', 'heading1', 'heading2', 'heading3'] as const).map((type) => {
+            const label = type === 'paragraph' ? 'T' : type === 'heading1' ? 'H1' : type === 'heading2' ? 'H2' : 'H3';
+            const isActive = activeBlockType === type;
+            return (
               <TouchableOpacity
-                key={cmd}
-                onPress={() => sendFormat(cmd)}
-                style={[styles.fmtBtn, isActive && { backgroundColor: '#6c63ff22', borderColor: '#6c63ff66' }]}
+                key={type}
+                onPress={() => sendBlockType(type)}
+                style={[styles.fmtBtn]}
               >
-                <Text style={[styles.fmtBtnText, style, { color: isActive ? '#6c63ff' : iconColor }]}>{label}</Text>
+                <Text style={[styles.fmtBtnText, { color: isActive ? '#040303ff' : iconColor }, type !== 'paragraph' && { fontWeight: '700' }]}>{label}</Text>
               </TouchableOpacity>
-            ))}
-          </View>
+            );
+          })}
 
+          <View style={styles.fmtSep} />
+          {([
+            { cmd: 'bold', label: 'B', isActive: activeInlineFormats.bold, style: { fontWeight: '700' as const } },
+            { cmd: 'italic', label: 'I', isActive: activeInlineFormats.italic, style: { fontStyle: 'italic' as const } },
+            { cmd: 'underline', label: 'U', isActive: activeInlineFormats.underline, style: { textDecorationLine: 'underline' as const } },
+            { cmd: 'strikeThrough', label: 'S', isActive: activeInlineFormats.strikethrough, style: { textDecorationLine: 'line-through' as const } },
+          ]).map(({ cmd, label, isActive, style }) => (
+            <TouchableOpacity
+              key={cmd}
+              onPress={() => sendFormat(cmd)}
+              style={[styles.fmtBtn]}
+            >
+              <Text style={[styles.fmtBtnText, style, { color: isActive ? '#040303ff' : iconColor }]}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>}
+        <View style={styles.editorWrapper}>
           <RichTextEditor
             initialContent={content}
             onChange={setContent}
@@ -187,6 +192,9 @@ export default function NoteScreen() {
           />
         </View>
       </ScrollView>
+
+
+
       {/* 
       <View style={[styles.bottomBar, { backgroundColor: isDark ? '#222' : '#F8F9FA' }]}>
         <TouchableOpacity style={styles.iconButton}>
@@ -203,7 +211,7 @@ export default function NoteScreen() {
           <MoreVertical color={iconColor} size={24} />
         </TouchableOpacity>
       </View> */}
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -215,13 +223,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 8,
+    marginHorizontal: 8
   },
   headerActions: {
     flexDirection: 'row',
   },
   iconButton: {
-    padding: 12,
+    padding: 10,
+    marginEnd: 10
   },
   paletteContainer: {
     flexDirection: 'row',
@@ -248,13 +257,13 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: 8,
     marginBottom: 16,
-    overflow: 'hidden',
+    overflow: 'hidden'
   },
   formatBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingVertical: 10,
     gap: 2,
   },
   fmtBtn: {
@@ -271,7 +280,7 @@ const styles = StyleSheet.create({
   fmtSep: {
     width: 1,
     height: 18,
-    backgroundColor: '#88888844',
+    backgroundColor: '#8a222244',
     marginHorizontal: 4,
   },
   bottomBar: {

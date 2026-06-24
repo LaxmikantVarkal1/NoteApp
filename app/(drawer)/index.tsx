@@ -1,12 +1,12 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNoteStore } from '@/store/useNoteStore';
-import { Menu, Grid, Plus, Pin } from 'lucide-react-native';
-import { useRouter, useNavigation } from 'expo-router';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useNoteStore } from '@/store/useNoteStore';
 import { DrawerActions } from '@react-navigation/native';
+import { useNavigation, useRouter } from 'expo-router';
+import { Menu, Pin, Plus } from 'lucide-react-native';
+import React, { useEffect } from 'react';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const TOMATO_RED = '#FF6347';
 
@@ -22,8 +22,8 @@ export default function NotesScreen() {
     loadNotes();
   }, [loadNotes]);
 
-  const filteredNotes = notes.filter((n) => 
-    n.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  const filteredNotes = notes.filter((n) =>
+    n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     n.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -59,9 +59,9 @@ export default function NotesScreen() {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        <TouchableOpacity>
+        {/* <TouchableOpacity>
           <Grid color={isDark ? '#FFF' : '#333'} size={24} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -88,8 +88,8 @@ export default function NotesScreen() {
         )}
       </ScrollView>
 
-      <TouchableOpacity 
-        style={[styles.fab, { backgroundColor: TOMATO_RED }]} 
+      <TouchableOpacity
+        style={[styles.fab, { backgroundColor: TOMATO_RED }]}
         onPress={() => router.push('/note/new')}
       >
         <Plus color="#FFF" size={32} />
@@ -114,7 +114,7 @@ function NoteCard({ note, index }: { note: any; index: number }) {
 
   return (
     <Animated.View entering={FadeInUp.delay(index * 100).springify()}>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[styles.noteCard, { backgroundColor: bgColor, borderColor: isDark ? '#444' : '#E0E0E0' }]}
         onPress={() => router.push(`/note/${note.id}`)}
       >

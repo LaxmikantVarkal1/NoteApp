@@ -96,7 +96,7 @@ function parseInitialContent(html: string): Block[] {
 
 function getPlaceholder(type: BlockType, isFirst: boolean): string {
   switch (type) {
-    case 'paragraph': return isFirst ? "Start writing, or type '/' for commands…" : "Type '/' for commands…";
+    // case 'paragraph': return isFirst ? "Start writing, or type '/' for commands…" : "Type '/' for commands…";
     case 'heading1': return 'Heading 1';
     case 'heading2': return 'Heading 2';
     case 'heading3': return 'Heading 3';
@@ -949,7 +949,7 @@ export default function RichTextEditor({
       </div>
 
       {/* ── Floating inline toolbar ──────────────────────────────────────────── */}
-      {inlineToolbar.visible && (
+      {/* {inlineToolbar.visible && (
         <div
           className="inline-toolbar"
           style={{ left: inlineToolbar.x, top: inlineToolbar.y }}
@@ -986,10 +986,10 @@ export default function RichTextEditor({
               if (url) applyFormat('createLink', url);
             }}>🔗</button>
         </div>
-      )}
+      )} */}
 
       {/* ── Slash menu ────────────────────────────────────────────────────────── */}
-      {slashMenu && filteredCmds.length > 0 && (
+      {/* {slashMenu && filteredCmds.length > 0 && (
         <div
           className="slash-menu"
           style={{
@@ -1015,7 +1015,7 @@ export default function RichTextEditor({
             </button>
           ))}
         </div>
-      )}
+      )} */}
     </div>
   );
 }
