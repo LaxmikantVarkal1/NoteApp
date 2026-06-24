@@ -2,15 +2,16 @@ import RichTextEditor from '@/components/RichTextEditor';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNoteStore } from '@/store/useNoteStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, CheckSquare, Image as ImageIcon, Mic, MoreVertical, Palette, Pin, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, Palette, Pin, Trash2 } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function NoteScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const isNew = id === 'new';
   const insets = useSafeAreaInsets();
+  const dimensios = useWindowDimensions();
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -23,6 +24,22 @@ export default function NoteScreen() {
   const [color, setColor] = useState('');
   const [pinned, setPinned] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
+  const [formatCommand, setFormatCommand] = useState<string | undefined>(undefined);
+  const [activeBlockType, setActiveBlockType] = useState<string>('paragraph');
+  const [activeInlineFormats, setActiveInlineFormats] = useState({
+    bold: false, italic: false, underline: false, strikethrough: false,
+  });
+
+  const sendFormat = (cmd: string) => {
+    setFormatCommand(`${cmd}:${Date.now()}`);
+  };
+
+  // Toggle: if the block is already the target type, revert to paragraph
+  const sendBlockType = (type: string) => {
+    const newType = activeBlockType === type ? 'paragraph' : type;
+    setActiveBlockType(newType);
+    sendFormat(`blockType:${newType}`);
+  };
 
   const colors = isDark
     ? ['#111111', '#4A1D1A', '#1C3322', '#1B2C3B', '#3B3A1C']
@@ -124,15 +141,53 @@ export default function NoteScreen() {
           multiline
         />
         <View style={styles.editorWrapper}>
+          {/* ── Native Formatting Toolbar ─────────────────────────── */}
+          <View style={[styles.formatBar, { borderBottomColor: isDark ? '#333' : '#E0E0E0', backgroundColor: isDark ? '#1A1A1A' : '#F8F9FA' }]}>
+            {/* Block type buttons */}
+            {(['paragraph', 'heading1', 'heading2', 'heading3'] as const).map((type) => {
+              const label = type === 'paragraph' ? 'T' : type === 'heading1' ? 'H1' : type === 'heading2' ? 'H2' : 'H3';
+              const isActive = activeBlockType === type;
+              return (
+                <TouchableOpacity
+                  key={type}
+                  onPress={() => sendBlockType(type)}
+                  style={[styles.fmtBtn, isActive && { backgroundColor: '#131314d5' }]}
+                >
+                  <Text style={[styles.fmtBtnText, { color: isActive ? '#ffffffff' : iconColor }, type !== 'paragraph' && { fontWeight: '700' }]}>{label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+
+            <View style={styles.fmtSep} />
+            {([
+              { cmd: 'bold', label: 'B', isActive: activeInlineFormats.bold, style: { fontWeight: '700' as const } },
+              { cmd: 'italic', label: 'I', isActive: activeInlineFormats.italic, style: { fontStyle: 'italic' as const } },
+              { cmd: 'underline', label: 'U', isActive: activeInlineFormats.underline, style: { textDecorationLine: 'underline' as const } },
+              { cmd: 'strikeThrough', label: 'S', isActive: activeInlineFormats.strikethrough, style: { textDecorationLine: 'line-through' as const } },
+            ]).map(({ cmd, label, isActive, style }) => (
+              <TouchableOpacity
+                key={cmd}
+                onPress={() => sendFormat(cmd)}
+                style={[styles.fmtBtn, isActive && { backgroundColor: '#6c63ff22', borderColor: '#6c63ff66' }]}
+              >
+                <Text style={[styles.fmtBtnText, style, { color: isActive ? '#6c63ff' : iconColor }]}>{label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
           <RichTextEditor
             initialContent={content}
             onChange={setContent}
+            sizes={{ width: dimensios.width - 40, height: dimensios.height - 390 }}
             textColor={isDark ? '#FFF' : '#333'}
             backgroundColor={currentBgColor}
+            formatCommand={formatCommand}
+            onBlockTypeChange={setActiveBlockType}
+            onActiveFormatsChange={setActiveInlineFormats}
           />
         </View>
       </ScrollView>
-
+      {/* 
       <View style={[styles.bottomBar, { backgroundColor: isDark ? '#222' : '#F8F9FA' }]}>
         <TouchableOpacity style={styles.iconButton}>
           <CheckSquare color={iconColor} size={24} />
@@ -147,7 +202,7 @@ export default function NoteScreen() {
         <TouchableOpacity style={styles.iconButton}>
           <MoreVertical color={iconColor} size={24} />
         </TouchableOpacity>
-      </View>
+      </View> */}
     </KeyboardAvoidingView>
   );
 }
@@ -192,14 +247,36 @@ const styles = StyleSheet.create({
   editorWrapper: {
     flex: 1,
     marginTop: 8,
-    marginBottom: 16
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  formatBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    gap: 2,
+  },
+  fmtBtn: {
+    borderColor: 'transparent',
+    minWidth: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fmtBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    padding: 5
+  },
+  fmtSep: {
+    width: 1,
+    height: 18,
+    backgroundColor: '#88888844',
+    marginHorizontal: 4,
   },
   bottomBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 8,
     paddingBottom: Platform.OS === 'ios' ? 24 : 8,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
   },
 });

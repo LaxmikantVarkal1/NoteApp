@@ -46,6 +46,20 @@ interface RichTextEditorProps {
   onChange: (html: string) => void;
   textColor?: string;
   backgroundColor?: string;
+  sizes?: {
+    width?: number,
+    height?: number
+  };
+  // Pass a new unique string each time to trigger a format command.
+  // Inline formats: "bold", "italic", "underline", "strikeThrough", "hiliteColor:#ffe066"
+  // Block type:     "blockType:paragraph", "blockType:heading1", "blockType:heading2",
+  //                 "blockType:heading3", "blockType:bulletList", "blockType:numberedList",
+  //                 "blockType:checklist", "blockType:blockquote", "blockType:code"
+  // Append a ":timestamp" suffix to re-trigger the same command: "bold:1719230000"
+  formatCommand?: string;
+  // Callbacks — DOM pushes state back to RN so the native toolbar stays in sync
+  onActiveFormatsChange?: (formats: { bold: boolean; italic: boolean; underline: boolean; strikethrough: boolean }) => void;
+  onBlockTypeChange?: (type: string) => void;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -115,6 +129,10 @@ export default function RichTextEditor({
   onChange,
   textColor = '#1a1a2e',
   backgroundColor = '#ffffff',
+  sizes,
+  formatCommand,
+  onActiveFormatsChange,
+  onBlockTypeChange,
 }: RichTextEditorProps) {
   const [blocks, setBlocks] = useState<Block[]>(() => parseInitialContent(initialContent));
   const [inlineToolbar, setInlineToolbar] = useState<InlineToolbarState>({ x: 0, y: 0, visible: false });
@@ -126,6 +144,11 @@ export default function RichTextEditor({
   const blockRefs = useRef<Record<string, HTMLElement | null>>({});
   const initializedRefs = useRef<Set<string>>(new Set());
   const savedRangeRef = useRef<Range | null>(null);
+
+  const getSafeRange = useCallback(() => {
+    const sel = window.getSelection();
+    return sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+  }, []);
 
   const isDark = backgroundColor === '#000' || backgroundColor === '#1a1a2e' || backgroundColor === '#111' || backgroundColor === '#222';
   const tc = textColor;
@@ -140,6 +163,72 @@ export default function RichTextEditor({
   useEffect(() => {
     onChange(serializeBlocks(blocks));
   }, [blocks]);
+
+  // ─── Report focused block type to RN parent ────────────────────────────────
+  useEffect(() => {
+    if (!onBlockTypeChange) return;
+    if (!focusedBlockId) return;
+    const block = blocks.find(b => b.id === focusedBlockId);
+    if (block) onBlockTypeChange(block.type);
+  }, [focusedBlockId, blocks]);
+
+  // ─── Handle format commands sent from React Native ─────────────────────────
+  // formatCommand is a string like "bold", "italic", "bold:1719230000"
+  // Block type commands: "blockType:heading1", "blockType:paragraph", etc.
+  // The optional trailing ":timestamp" (3rd segment) lets you re-send the same command.
+  useEffect(() => {
+    if (!formatCommand) return;
+    // Parts: [command, arg?, timestamp?]
+    const parts = formatCommand.split(':');
+    const cmd = parts[0];
+    if (!cmd) return;
+
+    // ── Block-type command ──────────────────────────────────────────────────
+    if (cmd === 'blockType') {
+      const newType = parts[1] as BlockType | undefined;
+      if (!newType) return;
+      // Use the currently focused block (fallback: last block)
+      const targetId = focusedBlockId ?? blocks[blocks.length - 1]?.id;
+      if (targetId) {
+        requestAnimationFrame(() => changeBlockType(targetId, newType));
+      }
+      return;
+    }
+
+    // ── Inline format command ───────────────────────────────────────────────
+    const restoreAndApply = () => {
+      if (savedRangeRef.current) {
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(savedRangeRef.current);
+      }
+      try {
+        document.execCommand(cmd, false, undefined);
+      } catch (_) { }
+      // Refresh active format state after applying
+      setActiveFormats({
+        bold: document.queryCommandState('bold'),
+        italic: document.queryCommandState('italic'),
+        underline: document.queryCommandState('underline'),
+        strikethrough: document.queryCommandState('strikeThrough'),
+      });
+      // Sync block html back to state
+      const sel = window.getSelection();
+      if (sel?.focusNode) {
+        let node: Node | null = sel.focusNode;
+        while (node && !(node instanceof HTMLElement && (node as HTMLElement).dataset.blockId)) {
+          node = node.parentElement;
+        }
+        if (node instanceof HTMLElement && node.dataset.blockId) {
+          const bid = node.dataset.blockId;
+          setBlocks(prev => prev.map(b => b.id === bid ? { ...b, html: (node as HTMLElement).innerHTML } : b));
+        }
+      }
+    };
+
+    // Use rAF to ensure the WebView has had a chance to process
+    requestAnimationFrame(restoreAndApply);
+  }, [formatCommand]);
 
   // ─── Focus a block ─────────────────────────────────────────────────────────
   const focusBlock = useCallback((id: string, toEnd = true) => {
@@ -160,26 +249,33 @@ export default function RichTextEditor({
 
   // ─── Sync active format state on every selection change ───────────────────
   const updateFormats = useCallback(() => {
-    setActiveFormats({
+    const formats = {
       bold: document.queryCommandState('bold'),
       italic: document.queryCommandState('italic'),
       underline: document.queryCommandState('underline'),
       strikethrough: document.queryCommandState('strikeThrough'),
-    });
+    };
+    setActiveFormats(formats);
+    // Notify RN parent so native toolbar buttons reflect the real active state
+    onActiveFormatsChange?.(formats);
 
     const sel = window.getSelection();
-    if (!sel || sel.isCollapsed || !sel.toString().trim()) {
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed || !sel.toString().trim()) {
       setInlineToolbar(t => ({ ...t, visible: false }));
       return;
     }
-    const range = sel.getRangeAt(0);
+    const range = getSafeRange();
+    if (!range) {
+      setInlineToolbar(t => ({ ...t, visible: false }));
+      return;
+    }
     const rect = range.getBoundingClientRect();
     if (rect.width === 0) {
       setInlineToolbar(t => ({ ...t, visible: false }));
       return;
     }
     setInlineToolbar({ x: rect.left + rect.width / 2, y: rect.top + window.scrollY - 8, visible: true });
-  }, []);
+  }, [getSafeRange]);
 
   useEffect(() => {
     document.addEventListener('selectionchange', updateFormats);
@@ -211,7 +307,7 @@ export default function RichTextEditor({
     const sel = window.getSelection();
 
     // Slash detection
-    if (sel?.focusNode) {
+    if (sel && sel.rangeCount > 0 && sel.focusNode) {
       const textBefore = sel.focusNode.textContent?.slice(0, sel.focusOffset) ?? '';
       const slashIdx = textBefore.lastIndexOf('/');
       if (
@@ -220,20 +316,23 @@ export default function RichTextEditor({
       ) {
         const query = textBefore.slice(slashIdx + 1);
         if (!query.includes(' ') && query.length < 15) {
-          const cloned = sel.getRangeAt(0).cloneRange();
-          cloned.collapse(true);
-          const rect = cloned.getBoundingClientRect();
-          setSlashMenu({ blockId: id, x: rect.left, y: rect.bottom + window.scrollY, query });
-          // Save html in state for serialisation, but do NOT touch the DOM
-          setBlocks(prev => prev.map(b => b.id === id ? { ...b, html: el.innerHTML } : b));
-          return;
+          const range = getSafeRange();
+          if (range) {
+            const cloned = range.cloneRange();
+            cloned.collapse(true);
+            const rect = cloned.getBoundingClientRect();
+            setSlashMenu({ blockId: id, x: rect.left, y: rect.bottom + window.scrollY, query });
+            // Save html in state for serialisation, but do NOT touch the DOM
+            setBlocks(prev => prev.map(b => b.id === id ? { ...b, html: el.innerHTML } : b));
+            return;
+          }
         }
       }
     }
 
     setSlashMenu(null);
     setBlocks(prev => prev.map(b => b.id === id ? { ...b, html: el.innerHTML } : b));
-  }, []);
+  }, [getSafeRange]);
 
   // ─── Keyboard handler ──────────────────────────────────────────────────────
   const handleBlockKeyDown = useCallback((e: React.KeyboardEvent<HTMLElement>, id: string) => {
@@ -379,11 +478,16 @@ export default function RichTextEditor({
     suppressContentEditableWarning: true,
     onInput: (e: React.FormEvent<HTMLElement>) => handleBlockInput(block.id, e.currentTarget),
     onKeyDown: (e: React.KeyboardEvent<HTMLElement>) => handleBlockKeyDown(e, block.id),
+    onKeyUp: () => { savedRangeRef.current = getSafeRange(); },
+    onMouseUp: () => { savedRangeRef.current = getSafeRange(); },
+    onTouchEnd: () => { savedRangeRef.current = getSafeRange(); },
     onFocus: () => {
       setFocusedBlockId(block.id);
       setSlashMenu(null);
     },
     onBlur: () => {
+      // Save selection before blur so native buttons can restore it
+      savedRangeRef.current = getSafeRange();
       const el = blockRefs.current[block.id];
       if (el) setBlocks(prev => prev.map(b => b.id === block.id ? { ...b, html: el.innerHTML } : b));
     },
@@ -409,7 +513,8 @@ export default function RichTextEditor({
           <div className="checklist-row">
             <button
               className={`check-btn ${block.checked ? 'checked' : ''}`}
-              onClick={() => toggleChecklist(block.id)}
+              onMouseDown={e => { e.preventDefault(); toggleChecklist(block.id); }}
+              onTouchStart={e => { e.preventDefault(); toggleChecklist(block.id); }}
               type="button"
             >
               {block.checked && <span>✓</span>}
@@ -489,7 +594,7 @@ export default function RichTextEditor({
       heading2: 'h2',
       heading3: 'h3',
     };
-    const Tag = (tagMap[block.type] ?? 'p') as keyof JSX.IntrinsicElements;
+    const Tag = (tagMap[block.type] ?? 'p') as any;
     return (
       <div key={block.id} className="block-wrapper">
         <Tag
@@ -506,7 +611,7 @@ export default function RichTextEditor({
     title, active, onMD, children, style,
   }: {
     title: string; active?: boolean;
-    onMD: (e: React.MouseEvent) => void;
+    onMD: (e: React.MouseEvent | React.TouchEvent) => void;
     children: React.ReactNode;
     style?: React.CSSProperties;
   }) => (
@@ -514,6 +619,7 @@ export default function RichTextEditor({
       title={title}
       className={`tb-btn ${active ? 'tb-active' : ''}`}
       onMouseDown={e => { e.preventDefault(); onMD(e); }}
+      onTouchStart={e => { e.preventDefault(); onMD(e); }}
       style={style}
     >
       {children}
@@ -547,22 +653,27 @@ export default function RichTextEditor({
           font-size: 16px;
           line-height: 1.7;
           position: relative;
+          width: ${sizes?.width ? sizes.width + "px" : "100%"};
+          height: ${sizes?.height ? sizes.height + "px" : "100%"};
         }
 
         /* ── Toolbar ───────────────────────────────── */
         .toolbar {
           display: flex;
           align-items: center;
-          gap: 2px;
-          padding: 6px 10px;
+          flex-wrap: nowrap;
+          gap: 4px;
+          padding: 8px 12px;
           border-bottom: 1px solid ${borderColor};
           background: ${bg};
           position: sticky;
           top: 0;
           z-index: 50;
           overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
           scrollbar-width: none;
           flex-shrink: 0;
+          width: 100%;
         }
         .toolbar::-webkit-scrollbar { display: none; }
 
@@ -570,11 +681,11 @@ export default function RichTextEditor({
           display: flex;
           align-items: center;
           justify-content: center;
-          min-width: 32px;
-          height: 30px;
+          min-width: 35px;
+          height: 35px;
           padding: 0 8px;
           border: none;
-          border-radius: 7px;
+          border-radius: 1px;
           background: transparent;
           color: ${tc};
           cursor: pointer;
@@ -584,6 +695,7 @@ export default function RichTextEditor({
           transition: background 0.13s, color 0.13s, box-shadow 0.13s;
           white-space: nowrap;
           opacity: 0.65;
+          flex-shrink: 0;
         }
         .tb-btn:hover {
           background: ${hoverColor};
@@ -635,7 +747,7 @@ export default function RichTextEditor({
         }
         .block-content:empty::before {
           content: attr(data-placeholder);
-          color: ${tc}44;
+          color: ${tc}80;
           pointer-events: none;
           font-style: italic;
         }
@@ -802,33 +914,137 @@ export default function RichTextEditor({
           to   { opacity: 1; transform: translateX(-50%) translateY(-100%) scale(1); }
         }
 
+        /* ── Mobile responsiveness adjustments ────── */
+        @media (max-width: 600px) {
+          .blocks-container {
+            padding: 12px 6px 100px;
+          }
+          .block-content.paragraph {
+            font-size: 15px;
+          }
+          .block-content.heading1 { font-size: 1.6em; }
+          .block-content.heading2 { font-size: 1.3em; }
+          .block-content.heading3 { font-size: 1.1em; }
+          .code-block {
+            padding: 8px 10px;
+          }
+          .quote-wrapper {
+            gap: 8px;
+          }
+          .slash-menu {
+            min-width: 200px;
+            max-width: calc(100vw - 20px);
+          }
+        }
+
         ::selection { background: ${accentColor}40; }
       `}</style>
 
       {/* ── Toolbar ─────────────────────────────────────────────────────────── */}
-      <div className="toolbar">
-        {/* Inline formats — show active state */}
+
+
+      {/* ── Blocks ──────────────────────────────────────────────────────────── */}
+      <div className="blocks-container">
+        {blocks.map((block, idx) => renderBlock(block, idx))}
+      </div>
+
+      {/* ── Floating inline toolbar ──────────────────────────────────────────── */}
+      {inlineToolbar.visible && (
+        <div
+          className="inline-toolbar"
+          style={{ left: inlineToolbar.x, top: inlineToolbar.y }}
+          onMouseDown={e => e.preventDefault()}
+          onTouchStart={e => e.preventDefault()}
+        >
+          <button className={`it-btn ${activeFormats.bold ? 'it-active' : ''}`} title="Bold"
+            onMouseDown={e => { e.preventDefault(); applyFormat('bold'); }}
+            onTouchStart={e => { e.preventDefault(); applyFormat('bold'); }}><b>B</b></button>
+          <button className={`it-btn ${activeFormats.italic ? 'it-active' : ''}`} title="Italic"
+            onMouseDown={e => { e.preventDefault(); applyFormat('italic'); }}
+            onTouchStart={e => { e.preventDefault(); applyFormat('italic'); }}><i>I</i></button>
+          <button className={`it-btn ${activeFormats.underline ? 'it-active' : ''}`} title="Underline"
+            onMouseDown={e => { e.preventDefault(); applyFormat('underline'); }}
+            onTouchStart={e => { e.preventDefault(); applyFormat('underline'); }}><u>U</u></button>
+          <button className={`it-btn ${activeFormats.strikethrough ? 'it-active' : ''}`} title="Strike"
+            onMouseDown={e => { e.preventDefault(); applyFormat('strikeThrough'); }}
+            onTouchStart={e => { e.preventDefault(); applyFormat('strikeThrough'); }}
+            style={{ textDecoration: 'line-through', fontSize: 12 }}>S</button>
+          <div className="it-sep" />
+          <button className="it-btn" title="Highlight"
+            onMouseDown={e => { e.preventDefault(); applyFormat('hiliteColor', '#ffe066'); }}
+            onTouchStart={e => { e.preventDefault(); applyFormat('hiliteColor', '#ffe066'); }}
+            style={{ fontSize: 14 }}>✦</button>
+          <button className="it-btn" title="Link"
+            onMouseDown={e => {
+              e.preventDefault();
+              const url = window.prompt('Enter URL:');
+              if (url) applyFormat('createLink', url);
+            }}
+            onTouchStart={e => {
+              e.preventDefault();
+              const url = window.prompt('Enter URL:');
+              if (url) applyFormat('createLink', url);
+            }}>🔗</button>
+        </div>
+      )}
+
+      {/* ── Slash menu ────────────────────────────────────────────────────────── */}
+      {slashMenu && filteredCmds.length > 0 && (
+        <div
+          className="slash-menu"
+          style={{
+            left: Math.min(slashMenu.x, window.innerWidth - 252),
+            top: slashMenu.y + 4,
+          }}
+          onMouseDown={e => e.preventDefault()}
+          onTouchStart={e => e.preventDefault()}
+        >
+          <div className="slash-title">Block types</div>
+          {filteredCmds.map(cmd => (
+            <button
+              key={cmd.type}
+              className="slash-item"
+              onMouseDown={e => { e.preventDefault(); changeBlockType(slashMenu.blockId, cmd.type); }}
+              onTouchStart={e => { e.preventDefault(); changeBlockType(slashMenu.blockId, cmd.type); }}
+            >
+              <span className="slash-icon">{cmd.icon}</span>
+              <span className="slash-item-text">
+                <span className="slash-label">{cmd.label}</span>
+                <span className="slash-desc">{cmd.desc}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+
+/**
+ *  <div className="toolbar">
         <TbBtn title="Bold (⌘B)" active={activeFormats.bold}
-          onMD={() => { savedRangeRef.current = window.getSelection()?.getRangeAt(0) ?? null; applyFormat('bold'); }}>
+          onMD={() => { savedRangeRef.current = getSafeRange(); applyFormat('bold'); }}>
           <b>B</b>
         </TbBtn>
         <TbBtn title="Italic (⌘I)" active={activeFormats.italic}
-          onMD={() => { savedRangeRef.current = window.getSelection()?.getRangeAt(0) ?? null; applyFormat('italic'); }}>
+          onMD={() => { savedRangeRef.current = getSafeRange(); applyFormat('italic'); }}>
           <i>I</i>
         </TbBtn>
         <TbBtn title="Underline (⌘U)" active={activeFormats.underline}
-          onMD={() => { savedRangeRef.current = window.getSelection()?.getRangeAt(0) ?? null; applyFormat('underline'); }}>
+          onMD={() => { savedRangeRef.current = getSafeRange(); applyFormat('underline'); }}>
           <u>U</u>
         </TbBtn>
         <TbBtn title="Strikethrough" active={activeFormats.strikethrough}
-          onMD={() => { savedRangeRef.current = window.getSelection()?.getRangeAt(0) ?? null; applyFormat('strikeThrough'); }}
+          onMD={() => { savedRangeRef.current = getSafeRange(); applyFormat('strikeThrough'); }}
           style={{ textDecoration: 'line-through' }}>
           S
         </TbBtn>
-
+````
         <div className="tb-sep" />
 
-        {/* Block type selectors */}
+     
         <TbBtn title="Heading 1" active={focusedBlockId !== null && blocks.find(b => b.id === focusedBlockId)?.type === 'heading1'}
           onMD={() => focusedBlockId && changeBlockType(focusedBlockId, 'heading1')}>H1</TbBtn>
         <TbBtn title="Heading 2" active={focusedBlockId !== null && blocks.find(b => b.id === focusedBlockId)?.type === 'heading2'}
@@ -859,66 +1075,7 @@ export default function RichTextEditor({
             setBlocks(prev => { const n = [...prev]; n.splice(idx + 1, 0, nb); return n; });
           }}>—</TbBtn>
       </div>
-
-      {/* ── Blocks ──────────────────────────────────────────────────────────── */}
-      <div className="blocks-container">
-        {blocks.map((block, idx) => renderBlock(block, idx))}
-      </div>
-
-      {/* ── Floating inline toolbar ──────────────────────────────────────────── */}
-      {inlineToolbar.visible && (
-        <div
-          className="inline-toolbar"
-          style={{ left: inlineToolbar.x, top: inlineToolbar.y }}
-          onMouseDown={e => e.preventDefault()}
-        >
-          <button className={`it-btn ${activeFormats.bold ? 'it-active' : ''}`} title="Bold"
-            onMouseDown={e => { e.preventDefault(); applyFormat('bold'); }}><b>B</b></button>
-          <button className={`it-btn ${activeFormats.italic ? 'it-active' : ''}`} title="Italic"
-            onMouseDown={e => { e.preventDefault(); applyFormat('italic'); }}><i>I</i></button>
-          <button className={`it-btn ${activeFormats.underline ? 'it-active' : ''}`} title="Underline"
-            onMouseDown={e => { e.preventDefault(); applyFormat('underline'); }}><u>U</u></button>
-          <button className={`it-btn ${activeFormats.strikethrough ? 'it-active' : ''}`} title="Strike"
-            onMouseDown={e => { e.preventDefault(); applyFormat('strikeThrough'); }}
-            style={{ textDecoration: 'line-through', fontSize: 12 }}>S</button>
-          <div className="it-sep" />
-          <button className="it-btn" title="Highlight"
-            onMouseDown={e => { e.preventDefault(); applyFormat('hiliteColor', '#ffe066'); }}
-            style={{ fontSize: 14 }}>✦</button>
-          <button className="it-btn" title="Link"
-            onMouseDown={e => {
-              e.preventDefault();
-              const url = window.prompt('Enter URL:');
-              if (url) applyFormat('createLink', url);
-            }}>🔗</button>
-        </div>
-      )}
-
-      {/* ── Slash menu ────────────────────────────────────────────────────────── */}
-      {slashMenu && filteredCmds.length > 0 && (
-        <div
-          className="slash-menu"
-          style={{
-            left: Math.min(slashMenu.x, window.innerWidth - 252),
-            top: slashMenu.y + 4,
-          }}
-        >
-          <div className="slash-title">Block types</div>
-          {filteredCmds.map(cmd => (
-            <button
-              key={cmd.type}
-              className="slash-item"
-              onMouseDown={e => { e.preventDefault(); changeBlockType(slashMenu.blockId, cmd.type); }}
-            >
-              <span className="slash-icon">{cmd.icon}</span>
-              <span className="slash-item-text">
-                <span className="slash-label">{cmd.label}</span>
-                <span className="slash-desc">{cmd.desc}</span>
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+ * 
+ * 
+ * 
+ */
