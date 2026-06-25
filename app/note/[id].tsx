@@ -1,11 +1,12 @@
 import RichTextEditor from '@/components/RichTextEditor';
 import { CustomFonts } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useNoteStore } from '@/store/useNoteStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Palette, Pin, SquarePen, Trash2 } from 'lucide-react-native';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Keyboard, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { ArrowLeft, Check, Palette, Pin, Plus, SquarePen, Tag, Trash2 } from 'lucide-react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Keyboard, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -15,20 +16,20 @@ export default function NoteScreen() {
   const insets = useSafeAreaInsets();
   const dimensios = useWindowDimensions();
   const editorSizes = useMemo(() => ({
-    width: dimensios.width - 40,
-    height: dimensios.height - 390
+    width: dimensios.width - 0,
+    height: dimensios.height - 150
   }), [dimensios.width, dimensios.height]);
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  const { notes, addNote, updateNote, deleteNote, togglePin } = useNoteStore();
+  const { notes, addNote, updateNote, deleteNote, togglePin, tags, addTag } = useNoteStore();
   const existingNote = notes.find(n => n.id === id);
-  const [keyboardHeight, setKeyboardHeight] = useState(10);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [color, setColor] = useState('');
-  const [selectedFont, setSelectedFont] = useState('Roboto');
+  const [selectedFont, setSelectedFont] = useState('Ubuntu');
   const [pinned, setPinned] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
   const [showFormatBar, setShowFormatBar] = useState(false);
@@ -37,11 +38,34 @@ export default function NoteScreen() {
   const [activeInlineFormats, setActiveInlineFormats] = useState({
     bold: false, italic: false, underline: false, strikethrough: false,
   });
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [showTagsModal, setShowTagsModal] = useState(false);
+  const [newTagInput, setNewTagInput] = useState('');
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  const toggleTagSelection = (tag: string) => {
+    if (selectedTags.includes(tag)) {
+      setSelectedTags(selectedTags.filter((t) => t !== tag));
+    } else {
+      setSelectedTags([...selectedTags, tag]);
+    }
+  };
+
+  const handleCreateAndSelectTag = () => {
+    const cleanTag = newTagInput.trim();
+    if (!cleanTag) return;
+    addTag(cleanTag);
+    if (!selectedTags.includes(cleanTag)) {
+      setSelectedTags([...selectedTags, cleanTag]);
+    }
+    setNewTagInput('');
+  };
+
   useEffect(() => {
     const showSub = Keyboard.addListener(
       "keyboardDidShow",
       (event) => {
-        setKeyboardHeight(event.endCoordinates.height + 20);
+        setKeyboardHeight(event.endCoordinates.height + 15);
       }
     );
 
@@ -71,21 +95,22 @@ export default function NoteScreen() {
 
 
   // Gestures events
-  const doubleTap = Gesture.Tap()
+  const doubleTap = Gesture.Tap().runOnJS(true)
     .numberOfTaps(2)
     .onEnd(() => {
-      console.log('Double tapped');
-    });
-  const swipe = Gesture.Pan()
-    .onEnd((e) => {
-      if (e.translationX > 100) {
-        console.log('Right Swipe');
-      } else if (e.translationX < -100) {
-        console.log('Left Swipe');
-      }
+      setSelectedFont((prev) => {
+        let font = Object.keys(CustomFonts);
+        let index = font.indexOf(prev);
+        if (index < font.length - 1) {
+          index++;
+        } else {
+          index = 0;
+        }
+        return font[index];
+      });
     });
 
-  const gesture = Gesture.Simultaneous(doubleTap, swipe);
+  const gesture = Gesture.Simultaneous(doubleTap);
 
   const colors = isDark
     ? ['#111111', '#4A1D1A', '#1C3322', '#1B2C3B', '#3B3A1C']
@@ -97,6 +122,7 @@ export default function NoteScreen() {
       setContent(existingNote.content);
       setColor(existingNote.color || '');
       setPinned(existingNote.pinned || false);
+      setSelectedTags(existingNote.tags || []);
       if (existingNote?.font) setSelectedFont(existingNote.font);
     }
   }, [existingNote, isNew]);
@@ -113,11 +139,11 @@ export default function NoteScreen() {
         content,
         color,
         pinned,
-        tags: [],
+        tags: selectedTags,
         font: selectedFont
       });
     } else {
-      updateNote(id as string, { title, content, color, pinned, font: selectedFont });
+      updateNote(id as string, { title, content, color, pinned, tags: selectedTags, font: selectedFont });
     }
     router.back();
   };
@@ -137,8 +163,9 @@ export default function NoteScreen() {
   };
 
   const currentBgColor = color || (isDark ? '#111' : '#FFF');
-  const iconColor = isDark ? '#ffffff4c' : '#33333343';
+  const iconColor = isDark ? '#ffffff39' : '#33333343';
   const isActiveAction = isDark ? '#ffffffff' : '#000000ff';
+  const isOnline = useNetworkStatus();
 
   return (
     <View
@@ -153,7 +180,10 @@ export default function NoteScreen() {
             <SquarePen color={showFormatBar ? isActiveAction : iconColor} size={23} />
           </TouchableOpacity>
           <TouchableOpacity onPress={togglePinStatus} style={styles.iconButton}>
-            <Pin color={pinned ? '#030303ff' : iconColor} size={24} />
+            <Pin color={pinned ? isActiveAction : iconColor} size={24} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowTagsModal(true)} style={styles.iconButton}>
+            <Tag color={showTagsModal ? isActiveAction : iconColor} size={24} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowPalette(!showPalette)} style={styles.iconButton}>
             <Palette color={showPalette ? isActiveAction : iconColor} size={24} />
@@ -179,24 +209,99 @@ export default function NoteScreen() {
         </View>
       )}
 
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16 }}>
+
+      <View style={{ flexDirection: 'row', paddingHorizontal: 16 }}>
         <TextInput
-          style={[styles.titleInput, { color: isDark ? '#FFF' : '#333' }]}
+          style={[styles.titleInput, { color: isDark ? '#FFF' : '#333', flex: 1 }]}
           placeholder="Title"
           placeholderTextColor={isDark ? '#AAA' : '#888'}
           value={title}
           onChangeText={setTitle}
         />
       </View>
-      {/* <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={[styles.contentContainer, { flexGrow: 1 }]}
-        keyboardShouldPersistTaps="always"
+
+      {/* Selected tags list */}
+      {selectedTags.length > 0 && (
+        <View style={styles.tagsContainer}>
+          {selectedTags.map((tag) => (
+            <View key={tag} style={[styles.tagChip, { backgroundColor: isDark ? '#ffffff19' : '#f1f3f435' }]}>
+              <Text style={[styles.tagChipText, { color: isDark ? '#ffffffff' : '#333' }]}>{tag}</Text>
+              {/* <TouchableOpacity onPress={() => setSelectedTags(selectedTags.filter((t) => t !== tag))}>
+                <X color={isDark ? '#AAA' : '#666'} size={14} style={{ marginLeft: 6 }} />
+              </TouchableOpacity> */}
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Label/Tags Picker Bottom Sheet Modal */}
+      <Modal
+        visible={showTagsModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowTagsModal(false)}
       >
-      
+        <View style={styles.modalBackdrop}>
+          <TouchableOpacity
+            style={styles.modalDismissArea}
+            activeOpacity={1}
+            onPress={() => setShowTagsModal(false)}
+          />
+          <View style={[styles.modalContent, { backgroundColor: isDark ? '#222' : '#FFF' }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: isDark ? '#FFF' : '#333' }]}>Label note</Text>
+              <TouchableOpacity onPress={() => setShowTagsModal(false)}>
+                <Text style={{ color: '#FF6347', fontWeight: 'bold', fontSize: 16 }}>Done</Text>
+              </TouchableOpacity>
+            </View>
 
+            {/* Quick search/create input */}
+            <View style={[styles.modalInputRow, { borderBottomColor: isDark ? '#444' : '#E0E0E0' }]}>
+              <TextInput
+                style={[styles.modalInput, { color: isDark ? '#FFF' : '#333' }]}
+                placeholder="Enter label name"
+                placeholderTextColor={isDark ? '#AAA' : '#888'}
+                value={newTagInput}
+                onChangeText={setNewTagInput}
+                onSubmitEditing={handleCreateAndSelectTag}
+              />
+              {newTagInput.trim() !== '' && (
+                <TouchableOpacity onPress={handleCreateAndSelectTag} style={{ padding: 8 }}>
+                  <Plus color="#FF6347" size={20} />
+                </TouchableOpacity>
+              )}
+            </View>
 
-      </ScrollView> */}
+            <ScrollView style={{ maxHeight: 250 }}>
+              {tags.map((tag) => {
+                const isSelected = selectedTags.includes(tag);
+                return (
+                  <TouchableOpacity
+                    key={tag}
+                    style={styles.modalTagItem}
+                    onPress={() => toggleTagSelection(tag)}
+                  >
+                    <Tag color={isDark ? '#AAA' : '#666'} size={18} />
+                    <Text style={[styles.modalTagText, { color: isDark ? '#FFF' : '#333' }]}>{tag}</Text>
+                    <View style={[
+                      styles.checkbox,
+                      { borderColor: isDark ? '#555' : '#CCC' },
+                      isSelected && { backgroundColor: '#FF6347', borderColor: '#FF6347' }
+                    ]}>
+                      {isSelected && <Check color="#FFF" size={12} />}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+              {tags.length === 0 && (
+                <Text style={{ textAlign: 'center', color: isDark ? '#777' : '#999', marginVertical: 20 }}>
+                  No labels found. Create one above!
+                </Text>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       <View style={styles.editorWrapper}>
         <RichTextEditor
@@ -236,10 +341,18 @@ export default function NoteScreen() {
         showFormatBar && <View style={{
           position: "absolute",
           bottom: keyboardHeight,
-          paddingBottom: 10,
+          flexDirection: 'row',
           width: '100%',
           zIndex: 999,
+          padding: 5,
+          backgroundColor: isDark ? '#ffffff10' : '#ffffffac'
         }}>
+          {isOnline && <GestureDetector gesture={gesture}>
+            <TouchableOpacity
+              style={{ height: 'auto', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }}>
+              <Text style={[{ color: isDark ? '#FFF' : '#333' }]}>{selectedFont + ''}</Text>
+            </TouchableOpacity>
+          </GestureDetector>}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -251,12 +364,7 @@ export default function NoteScreen() {
               gap: 12,
             }}
           >
-            <GestureDetector gesture={gesture}>
-              <TouchableOpacity
-                style={{ height: 'auto', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }}>
-                <Text style={[{ color: isDark ? '#FFF' : '#333' }]}>{selectedFont + ''}</Text>
-              </TouchableOpacity>
-            </GestureDetector>
+
             <View style={[styles.formatBar, { paddingHorizontal: 0, paddingVertical: 0, gap: 12 }]}>
               {/* Block type buttons */}
               {(['paragraph', 'heading1', 'heading2', 'heading3'] as const).map((type) => {
@@ -338,10 +446,8 @@ const styles = StyleSheet.create({
   },
   editorWrapper: {
     flex: 1,
-    marginTop: 8,
     marginBottom: 16,
     overflow: 'hidden',
-    padding: 7
   },
   formatBar: {
     flexDirection: 'row',
@@ -371,5 +477,77 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+    gap: 8,
+    marginBottom: 8,
+  },
+  tagChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 15,
+  },
+  tagChipText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalDismissArea: {
+    flex: 1,
+  },
+  modalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+    paddingTop: 16,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  modalInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    marginBottom: 12,
+  },
+  modalInput: {
+    flex: 1,
+    height: 40,
+    fontSize: 16,
+  },
+  modalTagItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    gap: 12,
+  },
+  modalTagText: {
+    flex: 1,
+    fontSize: 16,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

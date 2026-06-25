@@ -12,46 +12,65 @@ function CustomDrawerContent(props: any) {
   const textColor = isDark ? '#FFF' : '#333';
   const iconColor = isDark ? '#AAA' : '#666';
 
+  const currentRouteName = props.state.routes[props.state.index].name;
+
+  const getDrawerItemProps = (routeName: string) => {
+    const isFocused = currentRouteName === routeName;
+    return {
+      focused: isFocused,
+      activeTintColor: TOMATO_RED,
+      inactiveTintColor: textColor,
+      activeBackgroundColor: isDark ? '#333' : '#FFF0EE',
+      labelStyle: { color: isFocused ? TOMATO_RED : textColor, fontWeight: '500' },
+      onPress: () => props.navigation.navigate(routeName),
+    };
+  };
+
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0 }}>
       <View style={styles.drawerHeader}>
         <Text style={[styles.drawerTitle, { color: TOMATO_RED }]}>Keep Notes</Text>
       </View>
       
-      <DrawerItemList {...props} />
+      <DrawerItem
+        label="Notes"
+        icon={({ size }) => <FileText color={currentRouteName === 'index' ? TOMATO_RED : iconColor} size={size} />}
+        {...getDrawerItemProps('index')}
+      />
+      <DrawerItem
+        label="Labels"
+        icon={({ size }) => <Tag color={currentRouteName === 'labels' ? TOMATO_RED : iconColor} size={size} />}
+        {...getDrawerItemProps('labels')}
+      />
+      <DrawerItem
+        label="Reminders"
+        icon={({ size }) => <Bell color={currentRouteName === 'reminders' ? TOMATO_RED : iconColor} size={size} />}
+        {...getDrawerItemProps('reminders')}
+      />
       
       <View style={styles.divider} />
       
       <DrawerItem
-        label="Labels"
-        icon={({ color, size }) => <Tag color={iconColor} size={size} />}
-        onPress={() => {}}
-        labelStyle={{ color: textColor }}
-      />
-      <DrawerItem
         label="Archive"
-        icon={({ color, size }) => <Archive color={iconColor} size={size} />}
-        onPress={() => {}}
-        labelStyle={{ color: textColor }}
+        icon={({ size }) => <Archive color={currentRouteName === 'archive' ? TOMATO_RED : iconColor} size={size} />}
+        {...getDrawerItemProps('archive')}
       />
       <DrawerItem
         label="Trash"
-        icon={({ color, size }) => <Trash2 color={iconColor} size={size} />}
-        onPress={() => {}}
-        labelStyle={{ color: textColor }}
+        icon={({ size }) => <Trash2 color={currentRouteName === 'trash' ? TOMATO_RED : iconColor} size={size} />}
+        {...getDrawerItemProps('trash')}
       />
       
       <View style={styles.divider} />
       
       <DrawerItem
         label="Settings"
-        icon={({ color, size }) => <Settings color={iconColor} size={size} />}
-        onPress={() => {}}
-        labelStyle={{ color: textColor }}
+        icon={({ size }) => <Settings color={currentRouteName === 'settings' ? TOMATO_RED : iconColor} size={size} />}
+        {...getDrawerItemProps('settings')}
       />
       <DrawerItem
         label="Help & feedback"
-        icon={({ color, size }) => <HelpCircle color={iconColor} size={size} />}
+        icon={({ size }) => <HelpCircle color={iconColor} size={size} />}
         onPress={() => {}}
         labelStyle={{ color: textColor }}
       />
@@ -80,14 +99,36 @@ export default function DrawerLayout() {
         name="index"
         options={{
           drawerLabel: 'Notes',
-          drawerIcon: ({ color, size }) => <FileText color={color} size={size} />,
+        }}
+      />
+      <Drawer.Screen
+        name="labels"
+        options={{
+          drawerLabel: 'Labels',
         }}
       />
       <Drawer.Screen
         name="reminders"
         options={{
           drawerLabel: 'Reminders',
-          drawerIcon: ({ color, size }) => <Bell color={color} size={size} />,
+        }}
+      />
+      <Drawer.Screen
+        name="archive"
+        options={{
+          drawerLabel: 'Archive',
+        }}
+      />
+      <Drawer.Screen
+        name="trash"
+        options={{
+          drawerLabel: 'Trash',
+        }}
+      />
+      <Drawer.Screen
+        name="settings"
+        options={{
+          drawerLabel: 'Settings',
         }}
       />
     </Drawer>

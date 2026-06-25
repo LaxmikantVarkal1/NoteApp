@@ -1,5 +1,5 @@
 "use dom";
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type BlockType =
@@ -34,6 +34,7 @@ export interface RichTextEditorProps {
   configs: {
     font: fontConfig;
   };
+  readOnly?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -74,7 +75,7 @@ function findMarkdownMatches(text: string) {
       italicIndex = text.indexOf('*', italicIndex + 1);
       continue;
     }
-    
+
     let nextItalicIndex = text.indexOf('*', italicIndex + 1);
     while (nextItalicIndex !== -1) {
       if (text[nextItalicIndex + 1] === '*' || text[nextItalicIndex - 1] === '*') {
@@ -96,25 +97,25 @@ function findMarkdownMatches(text: string) {
 
 function convertBlockToChecklist(blockNode: HTMLElement) {
   if (blockNode.classList.contains('checklist-item')) return;
-  
+
   const checklistItem = document.createElement('div');
   checklistItem.className = 'checklist-item';
-  
+
   const checkbox = document.createElement('input');
   checkbox.type = 'checkbox';
   checkbox.setAttribute('contenteditable', 'false');
   checklistItem.appendChild(checkbox);
-  
+
   const textSpan = document.createElement('span');
   textSpan.className = 'checklist-text';
-  
+
   while (blockNode.firstChild) {
     textSpan.appendChild(blockNode.firstChild);
   }
   checklistItem.appendChild(textSpan);
-  
+
   blockNode.parentNode!.replaceChild(checklistItem, blockNode);
-  
+
   const selection = window.getSelection();
   if (selection) {
     const range = document.createRange();
@@ -142,7 +143,7 @@ function convertChecklistToParagraph(checklistNode: HTMLElement) {
     }
   }
   checklistNode.parentNode!.replaceChild(p, checklistNode);
-  
+
   const selection = window.getSelection();
   if (selection) {
     const range = document.createRange();
@@ -156,10 +157,10 @@ function convertChecklistToParagraph(checklistNode: HTMLElement) {
 function getCurrentBlockType(editorEl: HTMLElement): BlockType {
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) return 'paragraph';
-  
+
   let node = selection.getRangeAt(0).startContainer;
   let blockNode: Node | null = node;
-  
+
   while (blockNode && blockNode !== editorEl) {
     if (blockNode.nodeType === Node.ELEMENT_NODE) {
       const el = blockNode as HTMLElement;
@@ -291,7 +292,7 @@ function handleBlockMarkdown(blockNode: HTMLElement, selection: Selection) {
     hr.setAttribute('contenteditable', 'false');
     const p = document.createElement('p');
     p.innerHTML = '<br>';
-    
+
     const parent = blockNode.parentNode!;
     parent.replaceChild(hr, blockNode);
     parent.insertBefore(p, hr.nextSibling);
@@ -329,11 +330,13 @@ export default function RichTextEditor({
   formatCommand,
   onActiveFormatsChange,
   onBlockTypeChange,
-  configs
+  configs,
+  readOnly = false
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const isInitialized = useRef(false);
   const savedRangeRef = useRef<Range | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const getSafeRange = useCallback(() => {
     const sel = window.getSelection();
@@ -344,7 +347,7 @@ export default function RichTextEditor({
   const tc = textColor;
   const bg = backgroundColor;
   const isLight = !isDark;
-  const borderColor = isLight ? `${tc}22` : `${tc}33`;
+  const borderColor = isLight ? '#0000002e' : '#fffdfd1d';
   const accentColor = '#6c63ff';
 
   // ─── Initialize Editor Content ─────────────────────────────────────────────
@@ -352,6 +355,7 @@ export default function RichTextEditor({
     if (editorRef.current && !isInitialized.current) {
       editorRef.current.innerHTML = initialContent || '<p><br></p>';
       isInitialized.current = true;
+      setLoading(false);
     }
   }, [initialContent]);
 
@@ -400,7 +404,7 @@ export default function RichTextEditor({
         const node = selection.getRangeAt(0).startContainer;
         let blockNode: Node | null = node;
         const editorEl = editorRef.current;
-        
+
         if (editorEl) {
           while (blockNode && blockNode !== editorEl) {
             if (blockNode.nodeType === Node.ELEMENT_NODE) {
@@ -468,7 +472,7 @@ export default function RichTextEditor({
     }
     try {
       document.execCommand(cmd, false, undefined);
-    } catch (_) {}
+    } catch (_) { }
 
     updateFormats();
 
@@ -531,10 +535,10 @@ export default function RichTextEditor({
     // ── Handle Enter Key ──
     if (e.key === 'Enter') {
       const node = range.startContainer;
-      const checklistItem = node.nodeType === Node.ELEMENT_NODE 
-        ? (node as HTMLElement).closest('.checklist-item') 
+      const checklistItem = node.nodeType === Node.ELEMENT_NODE
+        ? (node as HTMLElement).closest('.checklist-item')
         : node.parentElement?.closest('.checklist-item');
-        
+
       if (checklistItem) {
         const text = checklistItem.textContent?.trim() || '';
         if (!text) {
@@ -564,13 +568,13 @@ export default function RichTextEditor({
               checkbox.removeAttribute('checked');
             }
             newChecklistItem.classList.remove('checked');
-            
+
             // Clear any text if browser cloned it into checklist-text
             const textSpan = newChecklistItem.querySelector('.checklist-text');
             if (textSpan && textSpan !== newNode && !textSpan.contains(newNode)) {
               textSpan.innerHTML = '<br>';
             }
-            
+
             if (editorRef.current) {
               onChange(editorRef.current.innerHTML);
             }
@@ -585,7 +589,7 @@ export default function RichTextEditor({
       let isAtStartOfBlock = false;
       let blockNode: Node | null = node;
       const editorEl = editorRef.current;
-      
+
       if (editorEl) {
         while (blockNode && blockNode !== editorEl) {
           if (blockNode.nodeType === Node.ELEMENT_NODE) {
@@ -617,7 +621,7 @@ export default function RichTextEditor({
           }
           return;
         }
-        
+
         const tagName = el.tagName;
         if (['H1', 'H2', 'H3', 'BLOCKQUOTE', 'PRE'].includes(tagName)) {
           e.preventDefault();
@@ -662,8 +666,39 @@ export default function RichTextEditor({
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
 
+      {loading && (
+        <div className="loader-bar">
+          <div className="loader-bar-value" />
+        </div>
+      )}
+
       <style>{`
         @import url(${configs?.font?.url});
+
+        .loader-bar {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 3px;
+          background-color: transparent;
+          overflow: hidden;
+          z-index: 10000;
+        }
+
+        .loader-bar-value {
+          width: 100%;
+          height: 100%;
+          background-color: ${accentColor};
+          animation: loader-indeterminate 1.5s infinite linear;
+          transform-origin: 0% 50%;
+        }
+
+        @keyframes loader-indeterminate {
+          0% { transform: translateX(-100%) scaleX(1); }
+          50% { transform: translateX(-30%) scaleX(0.4); }
+          100% { transform: translateX(100%) scaleX(1); }
+        }
 
         *, *::before, *::after { 
           font-family: "${configs?.font?.name}", sans-serif;
@@ -715,7 +750,7 @@ export default function RichTextEditor({
         }
         .editor-content p:first-child:empty::before,
         .editor-content p:first-child:has(br:only-child)::before {
-          content: "Start writing, or use markdown (#, -, etc.)…";
+          content: "...";
           color: ${tc}55;
           pointer-events: none;
           font-style: italic;
@@ -754,7 +789,7 @@ export default function RichTextEditor({
           padding: 2px 6px;
           border-radius: 4px;
           font-size: 0.9em;
-          color: ${isLight ? '#c7254e' : '#f9adc6'};
+          color: ${isLight ? '#353535ff' : '#222222ff'};
         }
 
         .editor-content ul, .editor-content ol {
@@ -803,7 +838,7 @@ export default function RichTextEditor({
       <div
         ref={editorRef}
         className="editor-content"
-        contentEditable
+        contentEditable={!readOnly}
         suppressContentEditableWarning
         onInput={handleEditorInput}
         onKeyDown={handleEditorKeyDown}

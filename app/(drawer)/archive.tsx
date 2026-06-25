@@ -2,41 +2,47 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNoteStore } from '@/store/useNoteStore';
 import { DrawerActions } from '@react-navigation/native';
 import { useNavigation, useRouter } from 'expo-router';
-import { Menu, Pin, Plus } from 'lucide-react-native';
+import { Menu, Pin } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const TOMATO_RED = '#FF6347';
-
-export default function NotesScreen() {
+export default function ArchiveScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const router = useRouter();
-  const { notes, loadNotes, searchQuery, setSearchQuery, tags } = useNoteStore();
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const { notes, loadNotes } = useNoteStore();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [visibleCount, setVisibleCount] = useState(20);
 
   useEffect(() => {
     loadNotes();
   }, [loadNotes]);
 
-  const filteredNotes = notes.filter((n) => {
-    const matchesSearch =
-      n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      n.content.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTag = selectedTag ? n.tags?.includes(selectedTag) : true;
-    return matchesSearch && matchesTag;
-  });
+  // Filter archived and non-trashed notes matching search query
+  const archivedNotes = notes.filter((n) => 
+    n.archived && 
+    !n.trashed && 
+    (n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     n.content.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
-  const pinnedNotes = filteredNotes.filter((n) => n.pinned);
-  const otherNotes = filteredNotes.filter((n) => !n.pinned);
+  const handleScroll = (event: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 200;
+    if (isCloseToBottom && visibleCount < archivedNotes.length) {
+      setVisibleCount((prev) => prev + 20);
+    }
+  };
 
   const renderNoteColumns = (notesToRender: any[]) => {
-    const leftColumn = notesToRender.filter((_, i) => i % 2 === 0);
-    const rightColumn = notesToRender.filter((_, i) => i % 2 !== 0);
+    const visibleNotes = notesToRender.slice(0, visibleCount);
+    const leftColumn = visibleNotes.filter((_, i) => i % 2 === 0);
+    const rightColumn = visibleNotes.filter((_, i) => i % 2 !== 0);
 
     return (
       <View style={styles.columnsContainer}>
@@ -52,105 +58,43 @@ export default function NotesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: isDark ? '#111' : '#FFF', paddingTop: insets.top }]}>
+      {/* Search Header */}
       <View style={[styles.searchContainer, { backgroundColor: isDark ? '#333' : '#F1F3F4' }]}>
         <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}>
           <Menu color={isDark ? '#FFF' : '#333'} size={24} />
         </TouchableOpacity>
         <TextInput
           style={[styles.searchInput, { color: isDark ? '#FFF' : '#333' }]}
-          placeholder="Search your notes"
+          placeholder="Search archived notes"
           placeholderTextColor={isDark ? '#AAA' : '#666'}
           value={searchQuery}
-          onChangeText={setSearchQuery}
+          onChangeText={(text) => {
+            setSearchQuery(text);
+            setVisibleCount(20);
+          }}
         />
-        {/* <TouchableOpacity>
-          <Grid color={isDark ? '#FFF' : '#333'} size={24} />
-        </TouchableOpacity> */}
       </View>
 
-      {/* Horizontal tag filter bar */}
-      {tags.length > 0 && (
-        <View style={styles.filterContainer}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterScrollContent}
-          >
-            <TouchableOpacity
-              style={[
-                styles.filterChip,
-                !selectedTag && styles.activeFilterChip,
-                { borderColor: isDark ? '#444' : '#E0E0E0' }
-              ]}
-              onPress={() => setSelectedTag(null)}
-            >
-              <Text style={[
-                styles.filterChipText,
-                { color: isDark ? '#FFF' : '#333' },
-                !selectedTag && styles.activeFilterChipText
-              ]}>All</Text>
-            </TouchableOpacity>
-            {tags.map((tag) => {
-              const isSelected = selectedTag === tag;
-              return (
-                <TouchableOpacity
-                  key={tag}
-                  style={[
-                    styles.filterChip,
-                    isSelected && styles.activeFilterChip,
-                    { borderColor: isDark ? '#444' : '#E0E0E0' }
-                  ]}
-                  onPress={() => setSelectedTag(tag)}
-                >
-                  <Text style={[
-                    styles.filterChipText,
-                    { color: isDark ? '#FFF' : '#333' },
-                    isSelected && styles.activeFilterChipText
-                  ]}>{tag}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-      )}
-
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {notes.length === 0 ? (
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
+        {archivedNotes.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyTitle, { color: isDark ? '#FFF' : '#333' }]}>Keep your thoughts organized</Text>
-            <Text style={[styles.emptySub, { color: isDark ? '#AAA' : '#666' }]}>Notes you add appear here</Text>
+            <Text style={[styles.emptyTitle, { color: isDark ? '#FFF' : '#333' }]}>No archived notes</Text>
+            <Text style={[styles.emptySub, { color: isDark ? '#AAA' : '#666' }]}>Notes you archive appear here</Text>
           </View>
         ) : (
-          <>
-            {pinnedNotes.length > 0 && (
-              <>
-                <Text style={[styles.sectionTitle, { color: isDark ? '#AAA' : '#666' }]}>PINNED</Text>
-                {renderNoteColumns(pinnedNotes)}
-              </>
-            )}
-            {otherNotes.length > 0 && (
-              <>
-                {pinnedNotes.length > 0 && <Text style={[styles.sectionTitle, { color: isDark ? '#AAA' : '#666', marginTop: 20 }]}>OTHERS</Text>}
-                {renderNoteColumns(otherNotes)}
-              </>
-            )}
-          </>
+          renderNoteColumns(archivedNotes)
         )}
       </ScrollView>
-
-      <TouchableOpacity
-        style={[styles.fab, { backgroundColor: TOMATO_RED }]}
-        onPress={() => router.push('/note/new')}
-      >
-        <Plus color="#FFF" size={32} />
-      </TouchableOpacity>
     </View>
   );
 }
 
 function stripHtml(html: string) {
   if (!html) return '';
-  // Replace common block tags with a space so words don't merge
   const withSpaces = html.replace(/<\/(p|div|li|h[1-6])>/gi, ' ').replace(/<br\s*\/?>/gi, ' ');
   return withSpaces.replace(/<[^>]*>?/gm, '').trim();
 }
@@ -175,6 +119,7 @@ function NoteCard({ note, index }: { note: any; index: number }) {
           </Text>
         ) : null}
         {note.pinned && <Pin size={16} color={isDark ? '#AAA' : '#666'} style={styles.pinIcon} />}
+        
         {note.tags && note.tags.length > 0 && (
           <View style={styles.cardTagsContainer}>
             {note.tags.map((tag: string) => (
@@ -229,12 +174,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 8,
   },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    marginLeft: 4,
-  },
   columnsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -262,48 +201,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     right: 12,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 30,
-    right: 30,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  filterContainer: {
-    height: 48,
-    marginBottom: 8,
-  },
-  filterScrollContent: {
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    gap: 8,
-  },
-  filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    backgroundColor: 'transparent',
-  },
-  activeFilterChip: {
-    backgroundColor: '#FF6347',
-    borderColor: '#FF6347',
-  },
-  filterChipText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  activeFilterChipText: {
-    color: '#FFF',
   },
   cardTagsContainer: {
     flexDirection: 'row',
