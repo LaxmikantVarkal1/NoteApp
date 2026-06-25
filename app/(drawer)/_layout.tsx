@@ -1,8 +1,8 @@
-import { Drawer } from 'expo-router/drawer';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { DrawerContentScrollView, DrawerItemList, DrawerItem } from '@react-navigation/drawer';
-import { View, Text, StyleSheet } from 'react-native';
-import { Settings, HelpCircle, Archive, Trash2, Tag, Bell, FileText } from 'lucide-react-native';
+import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
+import { Drawer } from 'expo-router/drawer';
+import { Archive, FileText, HelpCircle, Settings, Tag, Trash2 } from 'lucide-react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 const TOMATO_RED = '#FF6347';
 
@@ -14,7 +14,7 @@ function CustomDrawerContent(props: any) {
 
   const currentRouteName = props.state.routes[props.state.index].name;
 
-  const getDrawerItemProps = (routeName: string) => {
+  const getDrawerItemProps: any = (routeName: string) => {
     const isFocused = currentRouteName === routeName;
     return {
       focused: isFocused,
@@ -31,7 +31,7 @@ function CustomDrawerContent(props: any) {
       <View style={styles.drawerHeader}>
         <Text style={[styles.drawerTitle, { color: TOMATO_RED }]}>Keep Notes</Text>
       </View>
-      
+
       <DrawerItem
         label="Notes"
         icon={({ size }) => <FileText color={currentRouteName === 'index' ? TOMATO_RED : iconColor} size={size} />}
@@ -42,14 +42,14 @@ function CustomDrawerContent(props: any) {
         icon={({ size }) => <Tag color={currentRouteName === 'labels' ? TOMATO_RED : iconColor} size={size} />}
         {...getDrawerItemProps('labels')}
       />
-      <DrawerItem
+      {/* <DrawerItem
         label="Reminders"
         icon={({ size }) => <Bell color={currentRouteName === 'reminders' ? TOMATO_RED : iconColor} size={size} />}
         {...getDrawerItemProps('reminders')}
-      />
-      
+      /> */}
+
       <View style={styles.divider} />
-      
+
       <DrawerItem
         label="Archive"
         icon={({ size }) => <Archive color={currentRouteName === 'archive' ? TOMATO_RED : iconColor} size={size} />}
@@ -60,9 +60,9 @@ function CustomDrawerContent(props: any) {
         icon={({ size }) => <Trash2 color={currentRouteName === 'trash' ? TOMATO_RED : iconColor} size={size} />}
         {...getDrawerItemProps('trash')}
       />
-      
+
       <View style={styles.divider} />
-      
+
       <DrawerItem
         label="Settings"
         icon={({ size }) => <Settings color={currentRouteName === 'settings' ? TOMATO_RED : iconColor} size={size} />}
@@ -71,7 +71,7 @@ function CustomDrawerContent(props: any) {
       <DrawerItem
         label="Help & feedback"
         icon={({ size }) => <HelpCircle color={iconColor} size={size} />}
-        onPress={() => {}}
+        onPress={() => { }}
         labelStyle={{ color: textColor }}
       />
     </DrawerContentScrollView>

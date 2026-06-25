@@ -2,9 +2,9 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNoteStore } from '@/store/useNoteStore';
 import { DrawerActions } from '@react-navigation/native';
 import { useNavigation } from 'expo-router';
-import { Alert, Menu, RotateCcw, Trash2, Calendar, BarChart2 } from 'lucide-react-native';
+import { BarChart2, Calendar, Menu, Trash2 } from 'lucide-react-native';
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, ScrollView } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const TOMATO_RED = '#FF6347';
@@ -33,13 +33,13 @@ export default function SettingsScreen() {
       "This will permanently delete all notes and labels. This cannot be undone.",
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "Delete All", 
-          style: "destructive", 
+        {
+          text: "Delete All",
+          style: "destructive",
           onPress: async () => {
             await clearAllData();
             Alert.alert("Success", "All notes and labels have been deleted.");
-          } 
+          }
         }
       ]
     );
@@ -77,7 +77,7 @@ export default function SettingsScreen() {
           <Text style={[styles.sectionDescription, { color: subtitleColor }]}>
             Choose how long notes are kept in the Trash before being permanently deleted.
           </Text>
-          
+
           <View style={[styles.optionsList, { borderColor }]}>
             {retentionOptions.map((opt, index) => {
               const isSelected = settings.trashAutoDeleteDays === opt.value;
@@ -86,7 +86,7 @@ export default function SettingsScreen() {
                   key={opt.value}
                   style={[
                     styles.optionRow,
-                    { 
+                    {
                       backgroundColor: isSelected ? (isDark ? '#333' : '#FFF0EE') : itemBg,
                       borderBottomWidth: index < retentionOptions.length - 1 ? 1 : 0,
                       borderBottomColor: borderColor
@@ -95,8 +95,8 @@ export default function SettingsScreen() {
                   onPress={() => setTrashAutoDeleteDays(opt.value)}
                 >
                   <Text style={[
-                    styles.optionLabel, 
-                    { 
+                    styles.optionLabel,
+                    {
                       color: isSelected ? TOMATO_RED : textColor,
                       fontWeight: isSelected ? '600' : '400'
                     }
@@ -122,7 +122,7 @@ export default function SettingsScreen() {
             <BarChart2 color={TOMATO_RED} size={20} />
             <Text style={[styles.sectionTitle, { color: textColor }]}>Statistics</Text>
           </View>
-          
+
           <View style={[styles.statsGrid, { backgroundColor: itemBg, borderColor }]}>
             <View style={styles.statRow}>
               <Text style={[styles.statLabel, { color: subtitleColor }]}>Active Notes</Text>
@@ -150,8 +150,8 @@ export default function SettingsScreen() {
         {/* Danger Zone */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: TOMATO_RED, marginBottom: 12 }]}>Danger Zone</Text>
-          <TouchableOpacity 
-            style={[styles.dangerButton, { borderColor: TOMATO_RED }]} 
+          <TouchableOpacity
+            style={[styles.dangerButton, { borderColor: TOMATO_RED }]}
             onPress={handleClearAll}
           >
             <Trash2 color={TOMATO_RED} size={20} />

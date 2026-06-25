@@ -4,7 +4,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useNoteStore } from '@/store/useNoteStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Check, Palette, Pin, Plus, SquarePen, Tag, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, Check, Palette, Pin, Plus, Tag, Trash2 } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Keyboard, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -32,7 +32,7 @@ export default function NoteScreen() {
   const [selectedFont, setSelectedFont] = useState('Ubuntu');
   const [pinned, setPinned] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
-  const [showFormatBar, setShowFormatBar] = useState(false);
+  const [showFormatBar, setShowFormatBar] = useState(true);
   const [formatCommand, setFormatCommand] = useState<string | undefined>(undefined);
   const [activeBlockType, setActiveBlockType] = useState<string>('paragraph');
   const [activeInlineFormats, setActiveInlineFormats] = useState({
@@ -176,9 +176,9 @@ export default function NoteScreen() {
           <ArrowLeft color={iconColor} size={24} />
         </TouchableOpacity>
         <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => setShowFormatBar(!showFormatBar)} style={[styles.iconButton]}>
+          {/* <TouchableOpacity onPress={() => setShowFormatBar(!showFormatBar)} style={[styles.iconButton]}>
             <SquarePen color={showFormatBar ? isActiveAction : iconColor} size={23} />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           <TouchableOpacity onPress={togglePinStatus} style={styles.iconButton}>
             <Pin color={pinned ? isActiveAction : iconColor} size={24} />
           </TouchableOpacity>
@@ -345,7 +345,7 @@ export default function NoteScreen() {
           width: '100%',
           zIndex: 999,
           padding: 5,
-          backgroundColor: isDark ? '#ffffff10' : '#ffffffac'
+          // backgroundColor: isDark ? '#ffffff10' : '#ffffffdd'
         }}>
           {isOnline && <GestureDetector gesture={gesture}>
             <TouchableOpacity

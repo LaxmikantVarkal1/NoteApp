@@ -1,8 +1,7 @@
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNoteStore } from '@/store/useNoteStore';
-import { DrawerActions } from '@react-navigation/native';
 import { useNavigation, useRouter } from 'expo-router';
-import { ArrowLeft, Check, Edit2, Menu, Plus, Tag, Trash2, X } from 'lucide-react-native';
+import { ArrowLeft, Check, Edit2, Tag, Trash2 } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const TOMATO_RED = '#FF6347';
 
 export default function LabelsScreen() {
+  const selectedTags = ["ggfgh"]
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const router = useRouter();
@@ -54,17 +54,17 @@ export default function LabelsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: isDark ? '#111' : '#FFF', paddingTop: insets.top }]}>
       {/* Header */}
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())} style={styles.iconButton}>
           <Menu color={textColor} size={24} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: textColor }]}>Edit labels</Text>
-      </View>
+      </View> */}
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         {/* Create tag row */}
         <View style={[styles.inputRow, { borderBottomColor: isDark ? '#333' : '#E0E0E0' }]}>
-          <TouchableOpacity 
+          {/* <TouchableOpacity 
             onPress={() => isInputFocused ? setIsInputFocused(false) : null} 
             style={styles.actionButton}
           >
@@ -73,18 +73,24 @@ export default function LabelsScreen() {
             ) : (
               <Plus color={iconColor} size={22} />
             )}
+          </TouchableOpacity> */}
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.iconButton}
+          >
+            <ArrowLeft color={textColor} size={24} />
           </TouchableOpacity>
-          
+
           <TextInput
             style={[styles.input, { color: textColor }]}
-            placeholder="Create new label"
+            placeholder="  Create new label"
             placeholderTextColor={isDark ? '#AAA' : '#888'}
             value={newTagName}
             onChangeText={setNewTagName}
             onFocus={() => setIsInputFocused(true)}
             onSubmitEditing={handleCreateTag}
           />
-          
+
           {isInputFocused && (
             <TouchableOpacity onPress={handleCreateTag} style={styles.actionButton}>
               <Check color={TOMATO_RED} size={22} />
@@ -97,7 +103,7 @@ export default function LabelsScreen() {
           {tags.map((tag) => {
             const isEditingThis = editingTag === tag;
             return (
-              <View key={tag} style={[styles.tagRow, { backgroundColor: itemBg }]}>
+              <View key={tag} style={[styles.tagRow, { backgroundColor: isEditingThis ? "#ff7a3d1c" : itemBg }]}>
                 {isEditingThis ? (
                   <TouchableOpacity onPress={() => deleteTag(tag)} style={styles.actionButton}>
                     <Trash2 color={TOMATO_RED} size={20} />
@@ -171,13 +177,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
-    borderBottomWidth: 1,
     marginBottom: 20,
   },
   input: {
     flex: 1,
     fontSize: 16,
-    paddingHorizontal: 12,
+    paddingHorizontal: 0,
     height: 40,
   },
   actionButton: {
@@ -207,9 +212,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     paddingHorizontal: 12,
-    height: 40,
-    borderBottomWidth: 1.5,
-    borderBottomColor: TOMATO_RED,
+    height: 40
   },
   emptyContainer: {
     alignItems: 'center',

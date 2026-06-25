@@ -2,7 +2,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNoteStore } from '@/store/useNoteStore';
 import { DrawerActions } from '@react-navigation/native';
 import { useNavigation, useRouter } from 'expo-router';
-import { Menu, Pin, Plus } from 'lucide-react-native';
+import { FilterIcon, Menu, Pin, Plus } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
@@ -16,6 +16,7 @@ export default function NotesScreen() {
   const router = useRouter();
   const { notes, loadNotes, searchQuery, setSearchQuery, tags } = useNoteStore();
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [showTags, setShowTags] = useState(false);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
@@ -63,13 +64,14 @@ export default function NotesScreen() {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        {/* <TouchableOpacity>
-          <Grid color={isDark ? '#FFF' : '#333'} size={24} />
-        </TouchableOpacity> */}
+        <TouchableOpacity>
+          <FilterIcon onPress={() => setShowTags(!showTags)} color={isDark ? '#FFF' : '#333'} size={20} />
+          {(selectedTag?.length || 0) > 0 && <View style={{ position: 'absolute', backgroundColor: TOMATO_RED, width: 6, height: 6, borderRadius: 6 }}><Text>4</Text></View>}
+        </TouchableOpacity>
       </View>
 
       {/* Horizontal tag filter bar */}
-      {tags.length > 0 && (
+      {(tags.length > 0 && showTags) && (
         <View style={styles.filterContainer}>
           <ScrollView
             horizontal
