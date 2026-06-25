@@ -179,45 +179,40 @@ export default function NoteScreen() {
         </View>
       )}
 
-
-      <ScrollView
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16 }}>
+        <TextInput
+          style={[styles.titleInput, { color: isDark ? '#FFF' : '#333' }]}
+          placeholder="Title"
+          placeholderTextColor={isDark ? '#AAA' : '#888'}
+          value={title}
+          onChangeText={setTitle}
+        />
+      </View>
+      {/* <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={[styles.contentContainer, { flexGrow: 1 }]}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
       >
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <TextInput
-            style={[styles.titleInput, { color: isDark ? '#FFF' : '#333' }]}
-            placeholder="Title"
-            placeholderTextColor={isDark ? '#AAA' : '#888'}
-            value={title}
-            onChangeText={setTitle}
-            multiline
-          />
+      
 
 
-        </View>
+      </ScrollView> */}
 
-
-        {/* ── Native Formatting Toolbar ─────────────────────────── */}
-
-        <View style={styles.editorWrapper}>
-          <RichTextEditor
-            initialContent={existingNote?.content || ''}
-            onChange={setContent}
-            sizes={editorSizes}
-            textColor={isDark ? '#FFF' : '#333'}
-            backgroundColor={currentBgColor}
-            formatCommand={formatCommand}
-            onBlockTypeChange={setActiveBlockType}
-            onActiveFormatsChange={setActiveInlineFormats}
-            configs={{
-              font: CustomFonts[selectedFont || 'Roboto']
-            }}
-          />
-        </View>
-      </ScrollView>
-
+      <View style={styles.editorWrapper}>
+        <RichTextEditor
+          initialContent={existingNote?.content || ''}
+          onChange={setContent}
+          sizes={editorSizes}
+          textColor={isDark ? '#FFF' : '#333'}
+          backgroundColor={currentBgColor}
+          formatCommand={formatCommand}
+          onBlockTypeChange={setActiveBlockType}
+          onActiveFormatsChange={setActiveInlineFormats}
+          configs={{
+            font: CustomFonts[selectedFont || 'Roboto']
+          }}
+        />
+      </View>
 
 
       {/* 
@@ -236,64 +231,68 @@ export default function NoteScreen() {
           <MoreVertical color={iconColor} size={24} />
         </TouchableOpacity>
       </View> */}
-      <View style={{
-        position: "absolute",
-        bottom: keyboardHeight,
-        paddingBottom: 10,
-        width: '100%',
-        zIndex: 999,
-      }}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyboardShouldPersistTaps="always"
-          contentContainerStyle={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingHorizontal: 16,
-            gap: 12,
-          }}
-        >
-          <GestureDetector gesture={gesture}>
-            <TouchableOpacity
-              style={{ height: 'auto', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }}>
-              <Text style={[{ color: isDark ? '#FFF' : '#333' }]}>{selectedFont + ''}</Text>
-            </TouchableOpacity>
-          </GestureDetector>
-          {showFormatBar && <View style={[styles.formatBar, { paddingHorizontal: 0, paddingVertical: 0, gap: 12 }]}>
-            {/* Block type buttons */}
-            {(['paragraph', 'heading1', 'heading2', 'heading3'] as const).map((type) => {
-              const label = type === 'paragraph' ? 'T' : type === 'heading1' ? 'H1' : type === 'heading2' ? 'H2' : 'H3';
-              const isActive = activeBlockType === type;
-              return (
+
+      {
+        showFormatBar && <View style={{
+          position: "absolute",
+          bottom: keyboardHeight,
+          paddingBottom: 10,
+          width: '100%',
+          zIndex: 999,
+        }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="always"
+            contentContainerStyle={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: 16,
+              gap: 12,
+            }}
+          >
+            <GestureDetector gesture={gesture}>
+              <TouchableOpacity
+                style={{ height: 'auto', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }}>
+                <Text style={[{ color: isDark ? '#FFF' : '#333' }]}>{selectedFont + ''}</Text>
+              </TouchableOpacity>
+            </GestureDetector>
+            <View style={[styles.formatBar, { paddingHorizontal: 0, paddingVertical: 0, gap: 12 }]}>
+              {/* Block type buttons */}
+              {(['paragraph', 'heading1', 'heading2', 'heading3'] as const).map((type) => {
+                const label = type === 'paragraph' ? 'T' : type === 'heading1' ? 'H1' : type === 'heading2' ? 'H2' : 'H3';
+                const isActive = activeBlockType === type;
+                return (
+                  <TouchableOpacity
+                    key={type}
+                    onPress={() => sendBlockType(type)}
+                    style={[styles.fmtBtn]}
+                  >
+                    <Text style={[styles.fmtBtnText, { color: isActive ? isActiveAction : iconColor }, type !== 'paragraph' && { fontWeight: '700' }]}>{label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+
+              <View style={styles.fmtSep} />
+              {([
+                { cmd: 'bold', label: 'B', isActive: activeInlineFormats.bold, style: { fontWeight: '700' as const } },
+                { cmd: 'italic', label: 'I', isActive: activeInlineFormats.italic, style: { fontStyle: 'italic' as const } },
+                { cmd: 'underline', label: 'U', isActive: activeInlineFormats.underline, style: { textDecorationLine: 'underline' as const } },
+                { cmd: 'strikeThrough', label: 'S', isActive: activeInlineFormats.strikethrough, style: { textDecorationLine: 'line-through' as const } },
+              ]).map(({ cmd, label, isActive, style }) => (
                 <TouchableOpacity
-                  key={type}
-                  onPress={() => sendBlockType(type)}
+                  key={cmd}
+                  onPress={() => sendFormat(cmd)}
                   style={[styles.fmtBtn]}
                 >
-                  <Text style={[styles.fmtBtnText, { color: isActive ? isActiveAction : iconColor }, type !== 'paragraph' && { fontWeight: '700' }]}>{label}</Text>
+                  <Text style={[styles.fmtBtnText, style, { color: isActive ? isActiveAction : iconColor }]}>{label}</Text>
                 </TouchableOpacity>
-              );
-            })}
+              ))}
+            </View>
+          </ScrollView>
+        </View>
+      }
 
-            <View style={styles.fmtSep} />
-            {([
-              { cmd: 'bold', label: 'B', isActive: activeInlineFormats.bold, style: { fontWeight: '700' as const } },
-              { cmd: 'italic', label: 'I', isActive: activeInlineFormats.italic, style: { fontStyle: 'italic' as const } },
-              { cmd: 'underline', label: 'U', isActive: activeInlineFormats.underline, style: { textDecorationLine: 'underline' as const } },
-              { cmd: 'strikeThrough', label: 'S', isActive: activeInlineFormats.strikethrough, style: { textDecorationLine: 'line-through' as const } },
-            ]).map(({ cmd, label, isActive, style }) => (
-              <TouchableOpacity
-                key={cmd}
-                onPress={() => sendFormat(cmd)}
-                style={[styles.fmtBtn]}
-              >
-                <Text style={[styles.fmtBtnText, style, { color: isActive ? isActiveAction : iconColor }]}>{label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>}
-        </ScrollView>
-      </View>
 
     </View>
   );
@@ -341,7 +340,8 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: 8,
     marginBottom: 16,
-    overflow: 'hidden'
+    overflow: 'hidden',
+    padding: 7
   },
   formatBar: {
     flexDirection: 'row',
