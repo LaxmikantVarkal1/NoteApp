@@ -1,10 +1,12 @@
 import RichTextEditor from '@/components/RichTextEditor';
+import { CustomFonts } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNoteStore } from '@/store/useNoteStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Palette, Pin, SquarePen, Trash2 } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Keyboard, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function NoteScreen() {
@@ -22,10 +24,11 @@ export default function NoteScreen() {
 
   const { notes, addNote, updateNote, deleteNote, togglePin } = useNoteStore();
   const existingNote = notes.find(n => n.id === id);
-
+  const [keyboardHeight, setKeyboardHeight] = useState(10);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [color, setColor] = useState('');
+  const [selectedFont, setSelectedFont] = useState('Roboto');
   const [pinned, setPinned] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
   const [showFormatBar, setShowFormatBar] = useState(false);
@@ -34,6 +37,26 @@ export default function NoteScreen() {
   const [activeInlineFormats, setActiveInlineFormats] = useState({
     bold: false, italic: false, underline: false, strikethrough: false,
   });
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      "keyboardDidShow",
+      (event) => {
+        setKeyboardHeight(event.endCoordinates.height + 20);
+      }
+    );
+
+    const hideSub = Keyboard.addListener(
+      "keyboardDidHide",
+      () => {
+        setKeyboardHeight(10);
+      }
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const sendFormat = (cmd: string) => {
     setFormatCommand(`${cmd}:${Date.now()}`);
@@ -46,6 +69,24 @@ export default function NoteScreen() {
     sendFormat(`blockType:${newType}`);
   };
 
+
+  // Gestures events
+  const doubleTap = Gesture.Tap()
+    .numberOfTaps(2)
+    .onEnd(() => {
+      console.log('Double tapped');
+    });
+  const swipe = Gesture.Pan()
+    .onEnd((e) => {
+      if (e.translationX > 100) {
+        console.log('Right Swipe');
+      } else if (e.translationX < -100) {
+        console.log('Left Swipe');
+      }
+    });
+
+  const gesture = Gesture.Simultaneous(doubleTap, swipe);
+
   const colors = isDark
     ? ['#111111', '#4A1D1A', '#1C3322', '#1B2C3B', '#3B3A1C']
     : ['#FFFFFF', '#FFD1CA', '#CFF1D7', '#D0E6F9', '#FFF3B8'];
@@ -56,6 +97,7 @@ export default function NoteScreen() {
       setContent(existingNote.content);
       setColor(existingNote.color || '');
       setPinned(existingNote.pinned || false);
+      if (existingNote?.font) setSelectedFont(existingNote.font);
     }
   }, [existingNote, isNew]);
 
@@ -72,9 +114,10 @@ export default function NoteScreen() {
         color,
         pinned,
         tags: [],
+        font: selectedFont
       });
     } else {
-      updateNote(id as string, { title, content, color, pinned });
+      updateNote(id as string, { title, content, color, pinned, font: selectedFont });
     }
     router.back();
   };
@@ -142,48 +185,22 @@ export default function NoteScreen() {
         contentContainerStyle={[styles.contentContainer, { flexGrow: 1 }]}
         keyboardShouldPersistTaps="handled"
       >
-        <TextInput
-          style={[styles.titleInput, { color: isDark ? '#FFF' : '#333' }]}
-          placeholder="Title"
-          placeholderTextColor={isDark ? '#AAA' : '#888'}
-          value={title}
-          onChangeText={setTitle}
-          multiline
-        />
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <TextInput
+            style={[styles.titleInput, { color: isDark ? '#FFF' : '#333' }]}
+            placeholder="Title"
+            placeholderTextColor={isDark ? '#AAA' : '#888'}
+            value={title}
+            onChangeText={setTitle}
+            multiline
+          />
+
+
+        </View>
+
 
         {/* ── Native Formatting Toolbar ─────────────────────────── */}
-        {showFormatBar && <View style={[styles.formatBar]}>
-          {/* Block type buttons */}
-          {(['paragraph', 'heading1', 'heading2', 'heading3'] as const).map((type) => {
-            const label = type === 'paragraph' ? 'T' : type === 'heading1' ? 'H1' : type === 'heading2' ? 'H2' : 'H3';
-            const isActive = activeBlockType === type;
-            return (
-              <TouchableOpacity
-                key={type}
-                onPress={() => sendBlockType(type)}
-                style={[styles.fmtBtn]}
-              >
-                <Text style={[styles.fmtBtnText, { color: isActive ? isActiveAction : iconColor }, type !== 'paragraph' && { fontWeight: '700' }]}>{label}</Text>
-              </TouchableOpacity>
-            );
-          })}
 
-          <View style={styles.fmtSep} />
-          {([
-            { cmd: 'bold', label: 'B', isActive: activeInlineFormats.bold, style: { fontWeight: '700' as const } },
-            { cmd: 'italic', label: 'I', isActive: activeInlineFormats.italic, style: { fontStyle: 'italic' as const } },
-            { cmd: 'underline', label: 'U', isActive: activeInlineFormats.underline, style: { textDecorationLine: 'underline' as const } },
-            { cmd: 'strikeThrough', label: 'S', isActive: activeInlineFormats.strikethrough, style: { textDecorationLine: 'line-through' as const } },
-          ]).map(({ cmd, label, isActive, style }) => (
-            <TouchableOpacity
-              key={cmd}
-              onPress={() => sendFormat(cmd)}
-              style={[styles.fmtBtn]}
-            >
-              <Text style={[styles.fmtBtnText, style, { color: isActive ? isActiveAction : iconColor }]}>{label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>}
         <View style={styles.editorWrapper}>
           <RichTextEditor
             initialContent={existingNote?.content || ''}
@@ -194,6 +211,9 @@ export default function NoteScreen() {
             formatCommand={formatCommand}
             onBlockTypeChange={setActiveBlockType}
             onActiveFormatsChange={setActiveInlineFormats}
+            configs={{
+              font: CustomFonts[selectedFont || 'Roboto']
+            }}
           />
         </View>
       </ScrollView>
@@ -216,6 +236,65 @@ export default function NoteScreen() {
           <MoreVertical color={iconColor} size={24} />
         </TouchableOpacity>
       </View> */}
+      <View style={{
+        position: "absolute",
+        bottom: keyboardHeight,
+        paddingBottom: 10,
+        width: '100%',
+        zIndex: 999,
+      }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="always"
+          contentContainerStyle={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 16,
+            gap: 12,
+          }}
+        >
+          <GestureDetector gesture={gesture}>
+            <TouchableOpacity
+              style={{ height: 'auto', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }}>
+              <Text style={[{ color: isDark ? '#FFF' : '#333' }]}>{selectedFont + ''}</Text>
+            </TouchableOpacity>
+          </GestureDetector>
+          {showFormatBar && <View style={[styles.formatBar, { paddingHorizontal: 0, paddingVertical: 0, gap: 12 }]}>
+            {/* Block type buttons */}
+            {(['paragraph', 'heading1', 'heading2', 'heading3'] as const).map((type) => {
+              const label = type === 'paragraph' ? 'T' : type === 'heading1' ? 'H1' : type === 'heading2' ? 'H2' : 'H3';
+              const isActive = activeBlockType === type;
+              return (
+                <TouchableOpacity
+                  key={type}
+                  onPress={() => sendBlockType(type)}
+                  style={[styles.fmtBtn]}
+                >
+                  <Text style={[styles.fmtBtnText, { color: isActive ? isActiveAction : iconColor }, type !== 'paragraph' && { fontWeight: '700' }]}>{label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+
+            <View style={styles.fmtSep} />
+            {([
+              { cmd: 'bold', label: 'B', isActive: activeInlineFormats.bold, style: { fontWeight: '700' as const } },
+              { cmd: 'italic', label: 'I', isActive: activeInlineFormats.italic, style: { fontStyle: 'italic' as const } },
+              { cmd: 'underline', label: 'U', isActive: activeInlineFormats.underline, style: { textDecorationLine: 'underline' as const } },
+              { cmd: 'strikeThrough', label: 'S', isActive: activeInlineFormats.strikethrough, style: { textDecorationLine: 'line-through' as const } },
+            ]).map(({ cmd, label, isActive, style }) => (
+              <TouchableOpacity
+                key={cmd}
+                onPress={() => sendFormat(cmd)}
+                style={[styles.fmtBtn]}
+              >
+                <Text style={[styles.fmtBtnText, style, { color: isActive ? isActiveAction : iconColor }]}>{label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>}
+        </ScrollView>
+      </View>
+
     </View>
   );
 }

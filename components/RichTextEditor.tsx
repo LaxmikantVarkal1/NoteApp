@@ -41,6 +41,11 @@ interface InlineToolbarState {
   visible: boolean;
 }
 
+interface fontConfig {
+  url: string;
+  name: string;
+}
+
 interface RichTextEditorProps {
   initialContent: string;
   onChange: (html: string) => void;
@@ -60,6 +65,9 @@ interface RichTextEditorProps {
   // Callbacks — DOM pushes state back to RN so the native toolbar stays in sync
   onActiveFormatsChange?: (formats: { bold: boolean; italic: boolean; underline: boolean; strikethrough: boolean }) => void;
   onBlockTypeChange?: (type: string) => void;
+  configs: {
+    font: fontConfig
+  }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -133,6 +141,7 @@ export default function RichTextEditor({
   formatCommand,
   onActiveFormatsChange,
   onBlockTypeChange,
+  configs
 }: RichTextEditorProps) {
   const [blocks, setBlocks] = useState<Block[]>(() => parseInitialContent(initialContent));
   const [inlineToolbar, setInlineToolbar] = useState<InlineToolbarState>({ x: 0, y: 0, visible: false });
@@ -669,7 +678,12 @@ export default function RichTextEditor({
       <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
 
       <style>{`
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
+        @import url(${configs?.font?.url});
+
+        *, *::before, *::after { 
+         font-family: "${configs?.font?.name}", sans-serif;
+        box-sizing: border-box; margin: 0; padding: 0; }
 
         .editor-root {
           display: flex;

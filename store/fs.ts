@@ -11,6 +11,7 @@ export interface Note {
   createdAt: number;
   updatedAt: number;
   tags: string[];
+  font: string;
 }
 
 export const loadNotesFromFS = async (): Promise<Note[]> => {
