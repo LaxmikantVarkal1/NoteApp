@@ -1,5 +1,5 @@
 import RichTextEditor from '@/components/RichTextEditor';
-import { bgPatterns } from '@/constants/bg';
+import bgPatterns from '@/constants/bg';
 import { CustomFonts } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
@@ -7,7 +7,7 @@ import { useNoteStore } from '@/store/useNoteStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, CircleDashed, Palette, Pin, Tag, Trash2 } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Keyboard, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Keyboard, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -24,7 +24,7 @@ export default function NoteScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  const { notes, addNote, updateNote, deleteNote, togglePin, tags, addTag, setSelectedTags, selectedTags } = useNoteStore();
+  const { notes, addNote, updateNote, deleteNote, togglePin, setSelectedTags, selectedTags } = useNoteStore();
   const existingNote = notes.find(n => n.id === id);
   const [keyboardHeight, setKeyboardHeight] = useState(10);
   const [title, setTitle] = useState('');
@@ -40,10 +40,6 @@ export default function NoteScreen() {
   const [activeInlineFormats, setActiveInlineFormats] = useState({
     bold: false, italic: false, underline: false, strikethrough: false,
   });
-
-  const [showModal, setShowModal] = useState(false);
-  const [newTagInput, setNewTagInput] = useState('');
-
 
   useEffect(() => {
     const showSub = Keyboard.addListener(
@@ -108,7 +104,6 @@ export default function NoteScreen() {
   const colors = isDark
     ? ['#111111', '#4A1D1A', '#1C3322', '#1B2C3B', '#3B3A1C']
     : ['#FFFFFF', '#FFD1CA', '#CFF1D7', '#D0E6F9', '#FFF3B8'];
-  const pattern = []
 
   useEffect(() => {
     if (existingNote && !isNew) {
@@ -194,13 +189,8 @@ export default function NoteScreen() {
           <TouchableOpacity onPress={() => {
             router.push('/note/modal/labels');
           }} style={styles.iconButton}>
-            <Tag color={showModal ? isActiveAction : iconColor} size={24} />
+            <Tag color={iconColor} size={24} />
           </TouchableOpacity>
-          <GestureDetector gesture={patternDoubleTap}>
-            <TouchableOpacity style={styles.iconButton}>
-              <CircleDashed color={backgroundPattern ? isActiveAction : iconColor} size={24} />
-            </TouchableOpacity>
-          </GestureDetector>
           <TouchableOpacity onPress={() => setShowPalette(!showPalette)} style={styles.iconButton}>
             <Palette color={showPalette ? isActiveAction : iconColor} size={24} />
           </TouchableOpacity>
@@ -215,15 +205,11 @@ export default function NoteScreen() {
 
       {showPalette && (
         <View style={styles.paletteContainer}>
-
-          <TouchableOpacity
-            style={[styles.colorCircle]}
-            onPress={() => {
-              const patterns = []
-            }}
-          >
-            <CircleDashed color={iconColor} size={36} />
-          </TouchableOpacity>
+          <GestureDetector gesture={patternDoubleTap}>
+            <TouchableOpacity style={styles.patternButton}>
+              <CircleDashed color={backgroundPattern ? isActiveAction : iconColor} size={32} />
+            </TouchableOpacity>
+          </GestureDetector>
           {colors.map((c) => (
             <TouchableOpacity
               key={c}
@@ -245,10 +231,6 @@ export default function NoteScreen() {
         />
       </View>
 
-
-
-
-
       {/* Selected tags list */}
       {selectedTags.length > 0 && (
         <View style={styles.tagsContainer}>
@@ -263,35 +245,7 @@ export default function NoteScreen() {
         </View>
       )}
 
-      {/* Label/Tags Picker Bottom Sheet Modal */}
-      <Modal
-        visible={showModal}
-        backdropColor={'rgba(255, 255, 255, 0.09)'}
-        animationType="slide"
-        presentationStyle='pageSheet'
-      >
-        <Pressable
-          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)" }}
-          onPress={() => setShowModal(false)}
-        >
-          <Pressable
-            style={{
-              marginTop: "50%", // Half-screen
-              flex: 1,
-              backgroundColor: "#fff",
-            }}
-          >
-            <ScrollView contentContainerStyle={{ padding: 16 }}>
-              {/* Your form */}
-
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
-
       <View style={styles.editorWrapper}>
-
-
         <RichTextEditor
           initialContent={existingNote?.content || ''}
           onChange={setContent}
@@ -306,7 +260,6 @@ export default function NoteScreen() {
             font: CustomFonts[selectedFont || 'Roboto']
           }}
         />
-
       </View>
 
 
@@ -423,6 +376,12 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
+  },
+  patternButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   contentContainer: {
     flex: 1,

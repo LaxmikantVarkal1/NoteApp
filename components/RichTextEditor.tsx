@@ -1,8 +1,6 @@
 "use dom";
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import * as patterns from '../constants/bg';
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type BlockType =
   | 'paragraph'
@@ -734,13 +732,10 @@ export default function RichTextEditor({
           min-height: 100%;
           font-family: 'Inter', system-ui, -apple-system, sans-serif;
           font-size: 16px;
-          line-height: 1.2;
+          line-height: 1.7;
           position: relative;
           width: ${sizes?.width ? sizes.width + "px" : "100%"};
           height: ${sizes?.height ? sizes.height + "px" : "100%"};
-          background-image: url("data:image/svg+xml;utf8,${encodeURIComponent(patterns.pb6)}");;
-          background-size: cover;
-          background-position: center;
         }
 
         /* scroll bar */

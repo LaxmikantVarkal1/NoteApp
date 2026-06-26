@@ -1,3 +1,9 @@
+export interface BgPattern {
+  id: string;
+  name: string;
+  svg: string;
+}
+
 const pb1 = `<svg width="359" height="907" viewBox="0 0 359 907" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <rect opacity="0.5" width="359" height="986" rx="40" fill="url(#pattern0_7_67)"/>
 <defs>
@@ -71,5 +77,15 @@ const pb6 = `
 </svg>
 `
 
-export { pb1, pb2, pb3, pb4, pb5, pb6 }
+export const bgPatterns: BgPattern[] = [
+  { id: 'none', name: 'None', svg: '' },
+  { id: 'paper', name: 'Paper', svg: pb1 },
+  { id: 'texture', name: 'Texture', svg: pb2 },
+  { id: 'blocks', name: 'Blocks', svg: pb3 },
+  { id: 'dots', name: 'Dots', svg: pb4 },
+  { id: 'grid', name: 'Grid', svg: pb5 },
+  { id: 'ruled', name: 'Ruled', svg: pb6 },
+];
 
+export { pb1, pb2, pb3, pb4, pb5, pb6 };
+export default bgPatterns;
