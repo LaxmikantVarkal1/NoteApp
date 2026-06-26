@@ -1,4 +1,5 @@
 import RichTextEditor from '@/components/RichTextEditor';
+import { bgPatterns } from '@/constants/bg';
 import { CustomFonts } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
@@ -29,6 +30,7 @@ export default function NoteScreen() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [color, setColor] = useState('');
+  const [backgroundPattern, setBackgroundPattern] = useState('');
   const [selectedFont, setSelectedFont] = useState('Ubuntu');
   const [pinned, setPinned] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
@@ -93,6 +95,15 @@ export default function NoteScreen() {
     });
 
   const gesture = Gesture.Simultaneous(doubleTap);
+  const patternDoubleTap = Gesture.Tap().runOnJS(true)
+    .numberOfTaps(2)
+    .onEnd(() => {
+      setBackgroundPattern((prev) => {
+        const currentIndex = bgPatterns.findIndex((pattern) => pattern.id === prev || pattern.svg === prev);
+        const nextIndex = currentIndex >= 0 && currentIndex < bgPatterns.length - 1 ? currentIndex + 1 : 0;
+        return bgPatterns[nextIndex]?.id || '';
+      });
+    });
 
   const colors = isDark
     ? ['#111111', '#4A1D1A', '#1C3322', '#1B2C3B', '#3B3A1C']
@@ -104,6 +115,9 @@ export default function NoteScreen() {
       setTitle(existingNote.title);
       setContent(existingNote.content);
       setColor(existingNote.color || '');
+      const savedPattern = existingNote.backgroundPattern || '';
+      const savedPatternConfig = bgPatterns.find((pattern) => pattern.id === savedPattern || pattern.svg === savedPattern);
+      setBackgroundPattern(savedPatternConfig?.id || '');
       setPinned(existingNote.pinned || false);
       setSelectedTags(existingNote?.tags as any || []);
       console.log(existingNote.tags)
@@ -111,6 +125,7 @@ export default function NoteScreen() {
     }
 
     if (isNew) {
+      setBackgroundPattern('');
       setSelectedTags([]);
     }
   }, [existingNote, isNew]);
@@ -126,12 +141,13 @@ export default function NoteScreen() {
         title,
         content,
         color,
+        backgroundPattern,
         pinned,
         tags: selectedTags,
         font: selectedFont
       });
     } else {
-      updateNote(id as string, { title, content, color, pinned, tags: selectedTags, font: selectedFont });
+      updateNote(id as string, { title, content, color, backgroundPattern, pinned, tags: selectedTags, font: selectedFont });
     }
     router.back();
   };
@@ -151,6 +167,7 @@ export default function NoteScreen() {
   };
 
   const currentBgColor = color || (isDark ? '#111' : '#FFF');
+  const activeBackgroundPattern = bgPatterns.find((pattern) => pattern.id === backgroundPattern)?.svg || '';
   const iconColor = isDark ? '#ffffff39' : '#33333343';
   const isActiveAction = isDark ? '#ffffffff' : '#000000ff';
   const isOnline = useNetworkStatus();
@@ -179,6 +196,11 @@ export default function NoteScreen() {
           }} style={styles.iconButton}>
             <Tag color={showModal ? isActiveAction : iconColor} size={24} />
           </TouchableOpacity>
+          <GestureDetector gesture={patternDoubleTap}>
+            <TouchableOpacity style={styles.iconButton}>
+              <CircleDashed color={backgroundPattern ? isActiveAction : iconColor} size={24} />
+            </TouchableOpacity>
+          </GestureDetector>
           <TouchableOpacity onPress={() => setShowPalette(!showPalette)} style={styles.iconButton}>
             <Palette color={showPalette ? isActiveAction : iconColor} size={24} />
           </TouchableOpacity>
@@ -276,6 +298,7 @@ export default function NoteScreen() {
           sizes={editorSizes}
           textColor={isDark ? '#FFF' : '#333'}
           backgroundColor={currentBgColor}
+          backgroundPattern={activeBackgroundPattern}
           formatCommand={formatCommand}
           onBlockTypeChange={setActiveBlockType}
           onActiveFormatsChange={setActiveInlineFormats}

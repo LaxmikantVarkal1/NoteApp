@@ -26,6 +26,7 @@ export interface RichTextEditorProps {
   onChange: (html: string) => void;
   textColor?: string;
   backgroundColor?: string;
+  backgroundPattern?: string;
   sizes?: {
     width?: number;
     height?: number;
@@ -322,12 +323,21 @@ function handleBlockMarkdown(blockNode: HTMLElement, selection: Selection) {
   }
 }
 
+function svgToBackgroundImage(svg?: string) {
+  if (!svg) return 'none';
+  if (svg.startsWith('url(')) return svg;
+  if (svg.startsWith('data:')) return `url("${svg}")`;
+
+  return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function RichTextEditor({
   initialContent,
   onChange,
   textColor = '#1a1a2e',
   backgroundColor = '#ffffff',
+  backgroundPattern = '',
   sizes,
   formatCommand,
   onActiveFormatsChange,
@@ -348,6 +358,7 @@ export default function RichTextEditor({
   const isDark = backgroundColor === '#000' || backgroundColor === '#1a1a2e' || backgroundColor === '#111' || backgroundColor === '#222';
   const tc = textColor;
   const bg = backgroundColor;
+  const patternBg = svgToBackgroundImage(backgroundPattern);
   const isLight = !isDark;
   const borderColor = isLight ? '#0000002e' : '#fffdfd1d';
   const accentColor = '#6c63ff';
@@ -665,7 +676,12 @@ export default function RichTextEditor({
   return (
     <div
       className="editor-root"
-      style={{ backgroundColor: bg, color: tc }}
+      style={{
+        backgroundColor: bg,
+        backgroundImage: patternBg,
+        backgroundRepeat: 'repeat',
+        color: tc,
+      }}
     >
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />

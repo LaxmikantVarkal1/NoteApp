@@ -12,6 +12,7 @@ export interface Note {
   updatedAt: number;
   tags: string[];
   font: string;
+  backgroundPattern?: string;
   archived?: boolean;
   trashed?: boolean;
   deletedAt?: number;
@@ -87,4 +88,3 @@ export const saveSettingsToFS = async (settings: SettingsData) => {
     console.error("Failed to save settings:", error);
   }
 };
-
