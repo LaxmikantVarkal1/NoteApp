@@ -1,8 +1,8 @@
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useNoteStore } from "@/store/useNoteStore";
-import { router, useNavigation } from "expo-router";
+import { router } from "expo-router";
 import { Check, Plus, Tag } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
 
 export default function SelectionList() {
@@ -11,13 +11,8 @@ export default function SelectionList() {
     const isDark = useColorScheme() === 'dark';
     const { selectedTags, setSelectedTags, addTag } = useNoteStore();
     const { height } = useWindowDimensions();
-    const navigation = useNavigation();
 
-    useEffect(() => {
-        navigation.setOptions({
-            sheetAllowedDetents: [0.3, 0.8],
-        });
-    }, [])
+
 
     const toggleTagSelection = (tag: string) => {
         if (selectedTags.includes(tag)) {

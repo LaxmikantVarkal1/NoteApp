@@ -43,8 +43,6 @@ export default function NoteScreen() {
   const [newTagInput, setNewTagInput] = useState('');
 
 
-
-
   useEffect(() => {
     const showSub = Keyboard.addListener(
       "keyboardDidShow",
@@ -284,7 +282,7 @@ export default function NoteScreen() {
           flexDirection: 'row',
           width: '100%',
           zIndex: 999,
-          padding: 5,
+          padding: 10,
           // backgroundColor: isDark ? '#ffffff10' : '#ffffffdd'
         }}>
           {isOnline && <GestureDetector gesture={gesture}>
