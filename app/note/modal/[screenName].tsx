@@ -13,6 +13,14 @@ export default function CustomModal() {
             </View>
         )
     }
+
+    if (screenName === "pageStyle") {
+        return (
+            <View style={styles.container}>
+                <Text>Page Style</Text>
+            </View>
+        )
+    }
     return (
         <View style={styles.container}>
             <Text>Modal is empty, check rout</Text>

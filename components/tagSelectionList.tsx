@@ -67,7 +67,12 @@ export default function SelectionList() {
 
             </View>
 
-            <ScrollView style={{ maxHeight: height - 250 }}>
+            <ScrollView nestedScrollEnabled={true}
+                style={{ maxHeight: height - 250 }}
+                contentContainerStyle={{
+                    flexGrow: 1,
+                    paddingHorizontal: 5
+                }} >
                 {tags.map((tag) => {
                     const isSelected = selectedTags.includes(tag);
                     return (
@@ -110,11 +115,10 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     modalContent: {
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
         paddingHorizontal: 20,
         paddingBottom: Platform.OS === 'ios' ? 40 : 20,
         paddingTop: 16,
+        height: "100%"
     },
     modalHeader: {
         flexDirection: 'row',

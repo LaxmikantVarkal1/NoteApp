@@ -8,9 +8,10 @@ export default function NoteLayout() {
         name="modal/[screenName]"
         options={{
           presentation: 'formSheet',
-          sheetAllowedDetents: [0.25, 0.5, 1],
+          sheetAllowedDetents: [0.25, 0.5, 0.9],
           sheetInitialDetentIndex: 1,
-          sheetGrabberVisible: true
+          sheetGrabberVisible: true,
+          gestureEnabled: false,
         }}
       />
     </Stack>

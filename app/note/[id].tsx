@@ -4,9 +4,9 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useNoteStore } from '@/store/useNoteStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Palette, Pin, Tag, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, CircleDashed, Palette, Pin, Tag, Trash2 } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Keyboard, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Keyboard, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -25,7 +25,7 @@ export default function NoteScreen() {
 
   const { notes, addNote, updateNote, deleteNote, togglePin, tags, addTag, setSelectedTags, selectedTags } = useNoteStore();
   const existingNote = notes.find(n => n.id === id);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [keyboardHeight, setKeyboardHeight] = useState(10);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [color, setColor] = useState('');
@@ -39,7 +39,7 @@ export default function NoteScreen() {
     bold: false, italic: false, underline: false, strikethrough: false,
   });
 
-  const [showTagsModal, setShowTagsModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [newTagInput, setNewTagInput] = useState('');
 
 
@@ -97,6 +97,7 @@ export default function NoteScreen() {
   const colors = isDark
     ? ['#111111', '#4A1D1A', '#1C3322', '#1B2C3B', '#3B3A1C']
     : ['#FFFFFF', '#FFD1CA', '#CFF1D7', '#D0E6F9', '#FFF3B8'];
+  const pattern = []
 
   useEffect(() => {
     if (existingNote && !isNew) {
@@ -154,7 +155,11 @@ export default function NoteScreen() {
   const isActiveAction = isDark ? '#ffffffff' : '#000000ff';
   const isOnline = useNetworkStatus();
 
+
+
+
   return (
+
     <View
       style={[styles.container, { backgroundColor: currentBgColor, paddingTop: insets.top }]}
     >
@@ -170,10 +175,9 @@ export default function NoteScreen() {
             <Pin color={pinned ? isActiveAction : iconColor} size={24} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => {
-            // setShowTagsModal(true);
             router.push('/note/modal/labels');
           }} style={styles.iconButton}>
-            <Tag color={showTagsModal ? isActiveAction : iconColor} size={24} />
+            <Tag color={showModal ? isActiveAction : iconColor} size={24} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowPalette(!showPalette)} style={styles.iconButton}>
             <Palette color={showPalette ? isActiveAction : iconColor} size={24} />
@@ -189,10 +193,19 @@ export default function NoteScreen() {
 
       {showPalette && (
         <View style={styles.paletteContainer}>
+
+          <TouchableOpacity
+            style={[styles.colorCircle]}
+            onPress={() => {
+              const patterns = []
+            }}
+          >
+            <CircleDashed color={iconColor} size={36} />
+          </TouchableOpacity>
           {colors.map((c) => (
             <TouchableOpacity
               key={c}
-              style={[styles.colorCircle, { backgroundColor: c, borderWidth: color === c || (c === colors[0] && !color) ? 2 : 1, borderColor: isDark ? '#FFF' : '#333' }]}
+              style={[styles.colorCircle, { backgroundColor: c, borderWidth: color === c || (c === colors[0] && !color) ? 2 : 0, borderColor: isDark ? '#FFF' : '#333' }]}
               onPress={() => setColor(c === colors[0] ? '' : c)}
             />
           ))}
@@ -210,6 +223,10 @@ export default function NoteScreen() {
         />
       </View>
 
+
+
+
+
       {/* Selected tags list */}
       {selectedTags.length > 0 && (
         <View style={styles.tagsContainer}>
@@ -225,23 +242,34 @@ export default function NoteScreen() {
       )}
 
       {/* Label/Tags Picker Bottom Sheet Modal */}
-      {/* <Modal
-        visible={showTagsModal}
-        transparent
+      <Modal
+        visible={showModal}
+        backdropColor={'rgba(255, 255, 255, 0.09)'}
         animationType="slide"
-        onRequestClose={() => setShowTagsModal(false)}
+        presentationStyle='pageSheet'
       >
-        <View style={styles.modalBackdrop}>
-          <TouchableOpacity
-            style={styles.modalDismissArea}
-            activeOpacity={1}
-            onPress={() => setShowTagsModal(false)}
-          />
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)" }}
+          onPress={() => setShowModal(false)}
+        >
+          <Pressable
+            style={{
+              marginTop: "50%", // Half-screen
+              flex: 1,
+              backgroundColor: "#fff",
+            }}
+          >
+            <ScrollView contentContainerStyle={{ padding: 16 }}>
+              {/* Your form */}
 
-        </View>
-      </Modal> */}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <View style={styles.editorWrapper}>
+
+
         <RichTextEditor
           initialContent={existingNote?.content || ''}
           onChange={setContent}
@@ -255,6 +283,7 @@ export default function NoteScreen() {
             font: CustomFonts[selectedFont || 'Roboto']
           }}
         />
+
       </View>
 
 
@@ -283,7 +312,7 @@ export default function NoteScreen() {
           width: '100%',
           zIndex: 999,
           padding: 10,
-          // backgroundColor: isDark ? '#ffffff10' : '#ffffffdd'
+          backgroundColor: isDark ? '#ffffff10' : '#ffffffdd'
         }}>
           {isOnline && <GestureDetector gesture={gesture}>
             <TouchableOpacity
@@ -408,7 +437,7 @@ const styles = StyleSheet.create({
   fmtSep: {
     width: 1,
     height: 18,
-    backgroundColor: '#8a222244',
+    backgroundColor: '#8b8a8ae4',
     marginHorizontal: 4,
   },
   bottomBar: {
