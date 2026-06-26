@@ -1,11 +1,12 @@
-import { create } from 'zustand';
-import { Note, loadNotesFromFS, saveNotesToFS, loadTagsFromFS, saveTagsToFS, loadSettingsFromFS, saveSettingsToFS, SettingsData } from './fs';
-import { v4 as uuidv4 } from 'uuid';
 import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
+import { create } from 'zustand';
+import { loadNotesFromFS, loadSettingsFromFS, loadTagsFromFS, Note, saveNotesToFS, saveSettingsToFS, saveTagsToFS, SettingsData } from './fs';
 
 interface NoteState {
   notes: Note[];
   tags: string[];
+  selectedTags: string[];
   settings: SettingsData;
   isLoading: boolean;
   searchQuery: string;
@@ -26,25 +27,36 @@ interface NoteState {
   emptyTrash: () => Promise<void>;
   setTrashAutoDeleteDays: (days: number) => Promise<void>;
   clearAllData: () => Promise<void>;
+  setSelectedTags: any
+}
+
+interface selectedTagsState {
+  selectedTags: string[];
+  tags: string[];
+  addTags: (tag: string) => void;
+  setSelectedTags: any
 }
 
 export const useNoteStore = create<NoteState>((set, get) => ({
   notes: [],
   tags: [],
+  selectedTags: [],
   settings: { trashAutoDeleteDays: 30 },
   isLoading: true,
+
   searchQuery: '',
   setSearchQuery: (query) => set({ searchQuery: query }),
+
   loadNotes: async () => {
     set({ isLoading: true });
     const notes = await loadNotesFromFS();
     const tags = await loadTagsFromFS();
     const settings = await loadSettingsFromFS();
-    
+
     // Auto-delete trash cleanup
     const now = Date.now();
     const retentionPeriod = settings.trashAutoDeleteDays * 24 * 60 * 60 * 1000;
-    
+
     let cleanNotes = notes;
     if (settings.trashAutoDeleteDays > 0) {
       cleanNotes = notes.filter((n) => {
@@ -57,7 +69,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
       // 0 means delete immediately (which would delete all trashed notes upon reload)
       cleanNotes = notes.filter((n) => !n.trashed);
     }
-    
+
     set({ notes: cleanNotes, tags, settings, isLoading: false });
     if (cleanNotes.length !== notes.length) {
       await saveNotesToFS(cleanNotes);
@@ -93,6 +105,8 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     set({ notes: updatedNotes });
     await saveNotesToFS(updatedNotes);
   },
+
+  // tag functions
   addTag: async (tag) => {
     const cleanTag = tag.trim();
     if (!cleanTag || get().tags.includes(cleanTag)) return;
@@ -137,6 +151,13 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     await saveTagsToFS(updatedTags);
     await saveNotesToFS(updatedNotes);
   },
+  setSelectedTags: (tag: string) => {
+    set((state) => ({
+      selectedTags: Array.isArray(tag) ? tag : Array.from(new Set([...state.selectedTags, tag]))
+    }))
+  },
+
+  //  note functions
   archiveNote: async (id) => {
     const updatedNotes = get().notes.map((n) =>
       n.id === id ? { ...n, archived: true, pinned: false, trashed: false, updatedAt: Date.now() } : n
@@ -192,4 +213,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     await saveNotesToFS([]);
     await saveTagsToFS([]);
   },
+
+
+
 }));

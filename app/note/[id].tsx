@@ -4,9 +4,9 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useNoteStore } from '@/store/useNoteStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Check, Palette, Pin, Plus, Tag, Trash2 } from 'lucide-react-native';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Keyboard, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { ArrowLeft, Palette, Pin, Tag, Trash2 } from 'lucide-react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Keyboard, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -23,7 +23,7 @@ export default function NoteScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  const { notes, addNote, updateNote, deleteNote, togglePin, tags, addTag } = useNoteStore();
+  const { notes, addNote, updateNote, deleteNote, togglePin, tags, addTag, setSelectedTags, selectedTags } = useNoteStore();
   const existingNote = notes.find(n => n.id === id);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [title, setTitle] = useState('');
@@ -38,28 +38,12 @@ export default function NoteScreen() {
   const [activeInlineFormats, setActiveInlineFormats] = useState({
     bold: false, italic: false, underline: false, strikethrough: false,
   });
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
   const [showTagsModal, setShowTagsModal] = useState(false);
   const [newTagInput, setNewTagInput] = useState('');
-  const editorRef = useRef<HTMLDivElement>(null);
 
-  const toggleTagSelection = (tag: string) => {
-    if (selectedTags.includes(tag)) {
-      setSelectedTags(selectedTags.filter((t) => t !== tag));
-    } else {
-      setSelectedTags([...selectedTags, tag]);
-    }
-  };
 
-  const handleCreateAndSelectTag = () => {
-    const cleanTag = newTagInput.trim();
-    if (!cleanTag) return;
-    addTag(cleanTag);
-    if (!selectedTags.includes(cleanTag)) {
-      setSelectedTags([...selectedTags, cleanTag]);
-    }
-    setNewTagInput('');
-  };
+
 
   useEffect(() => {
     const showSub = Keyboard.addListener(
@@ -122,8 +106,13 @@ export default function NoteScreen() {
       setContent(existingNote.content);
       setColor(existingNote.color || '');
       setPinned(existingNote.pinned || false);
-      setSelectedTags(existingNote.tags || []);
+      setSelectedTags(existingNote?.tags as any || []);
+      console.log(existingNote.tags)
       if (existingNote?.font) setSelectedFont(existingNote.font);
+    }
+
+    if (isNew) {
+      setSelectedTags([]);
     }
   }, [existingNote, isNew]);
 
@@ -182,7 +171,10 @@ export default function NoteScreen() {
           <TouchableOpacity onPress={togglePinStatus} style={styles.iconButton}>
             <Pin color={pinned ? isActiveAction : iconColor} size={24} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowTagsModal(true)} style={styles.iconButton}>
+          <TouchableOpacity onPress={() => {
+            // setShowTagsModal(true);
+            router.push('/note/modal/labels');
+          }} style={styles.iconButton}>
             <Tag color={showTagsModal ? isActiveAction : iconColor} size={24} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowPalette(!showPalette)} style={styles.iconButton}>
@@ -223,8 +215,8 @@ export default function NoteScreen() {
       {/* Selected tags list */}
       {selectedTags.length > 0 && (
         <View style={styles.tagsContainer}>
-          {selectedTags.map((tag) => (
-            <View key={tag} style={[styles.tagChip, { backgroundColor: isDark ? '#ffffff19' : '#f1f3f435' }]}>
+          {selectedTags.map((tag, index) => (
+            <View key={index} style={[styles.tagChip, { backgroundColor: isDark ? '#ffffff19' : '#f1f3f435' }]}>
               <Text style={[styles.tagChipText, { color: isDark ? '#ffffffff' : '#333' }]}>{tag}</Text>
               {/* <TouchableOpacity onPress={() => setSelectedTags(selectedTags.filter((t) => t !== tag))}>
                 <X color={isDark ? '#AAA' : '#666'} size={14} style={{ marginLeft: 6 }} />
@@ -235,7 +227,7 @@ export default function NoteScreen() {
       )}
 
       {/* Label/Tags Picker Bottom Sheet Modal */}
-      <Modal
+      {/* <Modal
         visible={showTagsModal}
         transparent
         animationType="slide"
@@ -247,61 +239,9 @@ export default function NoteScreen() {
             activeOpacity={1}
             onPress={() => setShowTagsModal(false)}
           />
-          <View style={[styles.modalContent, { backgroundColor: isDark ? '#222' : '#FFF' }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: isDark ? '#FFF' : '#333' }]}>Label note</Text>
-              <TouchableOpacity onPress={() => setShowTagsModal(false)}>
-                <Text style={{ color: '#FF6347', fontWeight: 'bold', fontSize: 16 }}>Done</Text>
-              </TouchableOpacity>
-            </View>
 
-            {/* Quick search/create input */}
-            <View style={[styles.modalInputRow, { borderBottomColor: isDark ? '#444' : '#E0E0E0' }]}>
-              <TextInput
-                style={[styles.modalInput, { color: isDark ? '#FFF' : '#333' }]}
-                placeholder="Enter label name"
-                placeholderTextColor={isDark ? '#AAA' : '#888'}
-                value={newTagInput}
-                onChangeText={setNewTagInput}
-                onSubmitEditing={handleCreateAndSelectTag}
-              />
-              {newTagInput.trim() !== '' && (
-                <TouchableOpacity onPress={handleCreateAndSelectTag} style={{ padding: 8 }}>
-                  <Plus color="#FF6347" size={20} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            <ScrollView style={{ maxHeight: 250 }}>
-              {tags.map((tag) => {
-                const isSelected = selectedTags.includes(tag);
-                return (
-                  <TouchableOpacity
-                    key={tag}
-                    style={styles.modalTagItem}
-                    onPress={() => toggleTagSelection(tag)}
-                  >
-                    <Tag color={isDark ? '#AAA' : '#666'} size={18} />
-                    <Text style={[styles.modalTagText, { color: isDark ? '#FFF' : '#333' }]}>{tag}</Text>
-                    <View style={[
-                      styles.checkbox,
-                      { borderColor: isDark ? '#555' : '#CCC' },
-                      isSelected && { backgroundColor: '#FF6347', borderColor: '#FF6347' }
-                    ]}>
-                      {isSelected && <Check color="#FFF" size={12} />}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-              {tags.length === 0 && (
-                <Text style={{ textAlign: 'center', color: isDark ? '#777' : '#999', marginVertical: 20 }}>
-                  No labels found. Create one above!
-                </Text>
-              )}
-            </ScrollView>
-          </View>
         </View>
-      </Modal>
+      </Modal> */}
 
       <View style={styles.editorWrapper}>
         <RichTextEditor
@@ -496,58 +436,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalDismissArea: {
-    flex: 1,
-  },
-  modalContent: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
-    paddingTop: 16,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  modalInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    marginBottom: 12,
-  },
-  modalInput: {
-    flex: 1,
-    height: 40,
-    fontSize: 16,
-  },
-  modalTagItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    gap: 12,
-  },
-  modalTagText: {
-    flex: 1,
-    fontSize: 16,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 2,
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+
 });
