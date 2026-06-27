@@ -5,9 +5,9 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useNoteStore } from '@/store/useNoteStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, CircleDashed, Palette, Pin, Tag, Trash2 } from 'lucide-react-native';
+import { Archive, ArrowLeft, CircleDashed, MoreVertical, Palette, Pin, Tag, Trash2 } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Keyboard, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Keyboard, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -24,7 +24,7 @@ export default function NoteScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  const { notes, addNote, updateNote, deleteNote, togglePin, setSelectedTags, selectedTags } = useNoteStore();
+  const { notes, addNote, updateNote, deleteNote, trashNote, archiveNote, unarchiveNote, togglePin, setSelectedTags, selectedTags } = useNoteStore();
   const existingNote = notes.find(n => n.id === id);
   const [keyboardHeight, setKeyboardHeight] = useState(10);
   const [title, setTitle] = useState('');
@@ -40,6 +40,7 @@ export default function NoteScreen() {
   const [activeInlineFormats, setActiveInlineFormats] = useState({
     bold: false, italic: false, underline: false, strikethrough: false,
   });
+  const [showMenu, setShowMenu] = useState(false);
 
   useEffect(() => {
     const showSub = Keyboard.addListener(
@@ -147,9 +148,20 @@ export default function NoteScreen() {
     router.back();
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!isNew) {
-      deleteNote(id as string);
+      await trashNote(id as string);
+    }
+    router.back();
+  };
+
+  const handleArchive = async () => {
+    if (!isNew) {
+      if (existingNote?.archived) {
+        await unarchiveNote(id as string);
+      } else {
+        await archiveNote(id as string);
+      }
     }
     router.back();
   };
@@ -166,6 +178,12 @@ export default function NoteScreen() {
   const iconColor = isDark ? '#ffffff39' : '#33333343';
   const isActiveAction = isDark ? '#ffffffff' : '#000000ff';
   const isOnline = useNetworkStatus();
+
+  const menuBgColor = isDark ? '#222' : '#FFF';
+  const menuBorderColor = isDark ? '#333' : '#E8E8E8';
+  const menuTextColor = isDark ? '#FFF' : '#333';
+  const menuIconColor = isDark ? '#AAA' : '#666';
+  const deleteColor = isDark ? '#FF6B6B' : '#E53935';
 
 
 
@@ -195,8 +213,8 @@ export default function NoteScreen() {
             <Palette color={showPalette ? isActiveAction : iconColor} size={24} />
           </TouchableOpacity>
           {!isNew && (
-            <TouchableOpacity onPress={handleDelete} style={styles.iconButton}>
-              <Trash2 color={iconColor} size={24} />
+            <TouchableOpacity onPress={() => setShowMenu(true)} style={styles.iconButton}>
+              <MoreVertical color={iconColor} size={24} />
             </TouchableOpacity>
           )}
 
@@ -206,8 +224,12 @@ export default function NoteScreen() {
       {showPalette && (
         <View style={styles.paletteContainer}>
           <GestureDetector gesture={patternDoubleTap}>
-            <TouchableOpacity style={styles.patternButton}>
-              <CircleDashed color={backgroundPattern ? isActiveAction : iconColor} size={32} />
+            <TouchableOpacity
+              onPress={() => {
+
+              }}
+              style={styles.patternButton}>
+              <CircleDashed color={backgroundPattern ? isActiveAction : iconColor} size={36} />
             </TouchableOpacity>
           </GestureDetector>
           {colors.map((c) => (
@@ -344,6 +366,53 @@ export default function NoteScreen() {
         </View>
       }
 
+      <Modal
+        visible={showMenu}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowMenu(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowMenu(false)}
+        >
+          <View style={[styles.menuTooltip, {
+            top: insets.top + 8,
+            right: 16,
+            backgroundColor: menuBgColor,
+            borderColor: menuBorderColor,
+          }]}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setShowMenu(false);
+                handleArchive();
+              }}
+            >
+              <Archive color={menuIconColor} size={18} />
+              <Text style={[styles.menuItemText, { color: menuTextColor }]}>
+                {existingNote?.archived ? 'Unarchive' : 'Archive'}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={[styles.menuSeparator, { backgroundColor: isDark ? '#333' : '#E8E8E8' }]} />
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setShowMenu(false);
+                handleDelete();
+              }}
+            >
+              <Trash2 color={deleteColor} size={18} />
+              <Text style={[styles.menuItemText, { color: deleteColor }]}>
+                Delete
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
     </View>
   );
@@ -445,5 +514,36 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  menuTooltip: {
+    position: 'absolute',
+    width: 150,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    gap: 10,
+  },
+  menuItemText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  menuSeparator: {
+    height: 1,
+    marginVertical: 4,
+  },
 });

@@ -214,6 +214,4 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     await saveTagsToFS([]);
   },
 
-
-
 }));
