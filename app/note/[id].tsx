@@ -1,6 +1,6 @@
 import RichTextEditor from '@/components/RichTextEditor';
 import bgPatterns from '@/constants/bg';
-import { CustomFonts } from '@/constants/theme';
+import { CustomFonts, Colors, Typography, NoteColors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useNoteStore } from '@/store/useNoteStore';
@@ -102,9 +102,8 @@ export default function NoteScreen() {
       });
     });
 
-  const colors = isDark
-    ? ['#111111', '#4A1D1A', '#1C3322', '#1B2C3B', '#3B3A1C']
-    : ['#FFFFFF', '#FFD1CA', '#CFF1D7', '#D0E6F9', '#FFF3B8'];
+  const themeColors = isDark ? Colors.dark : Colors.light;
+  const colors = isDark ? NoteColors.dark : NoteColors.light;
 
   useEffect(() => {
     if (existingNote && !isNew) {
@@ -173,17 +172,17 @@ export default function NoteScreen() {
     }
   };
 
-  const currentBgColor = color || (isDark ? '#111' : '#FFF');
+  const currentBgColor = color || themeColors.background;
   const activeBackgroundPattern = bgPatterns.find((pattern) => pattern.id === backgroundPattern)?.svg || '';
-  const iconColor = isDark ? '#ffffff39' : '#33333343';
-  const isActiveAction = isDark ? '#ffffffff' : '#000000ff';
+  const iconColor = themeColors.iconSubtle;
+  const isActiveAction = themeColors.iconActive;
   const isOnline = useNetworkStatus();
 
-  const menuBgColor = isDark ? '#222' : '#FFF';
-  const menuBorderColor = isDark ? '#333' : '#E8E8E8';
-  const menuTextColor = isDark ? '#FFF' : '#333';
-  const menuIconColor = isDark ? '#AAA' : '#666';
-  const deleteColor = isDark ? '#FF6B6B' : '#E53935';
+  const menuBgColor = themeColors.menuBg;
+  const menuBorderColor = themeColors.menuBorder;
+  const menuTextColor = themeColors.menuText;
+  const menuIconColor = themeColors.menuIcon;
+  const deleteColor = themeColors.deleteColor;
 
 
 
@@ -235,7 +234,7 @@ export default function NoteScreen() {
           {colors.map((c) => (
             <TouchableOpacity
               key={c}
-              style={[styles.colorCircle, { backgroundColor: c, borderWidth: color === c || (c === colors[0] && !color) ? 2 : 0, borderColor: isDark ? '#FFF' : '#333' }]}
+              style={[styles.colorCircle, { backgroundColor: c, borderWidth: color === c || (c === colors[0] && !color) ? 2 : 0, borderColor: themeColors.text }]}
               onPress={() => setColor(c === colors[0] ? '' : c)}
             />
           ))}
@@ -245,9 +244,9 @@ export default function NoteScreen() {
 
       <View style={{ flexDirection: 'row', paddingHorizontal: 16 }}>
         <TextInput
-          style={[styles.titleInput, { color: isDark ? '#FFF' : '#333', flex: 1 }]}
+          style={[styles.titleInput, { color: themeColors.text, flex: 1 }]}
           placeholder="Title"
-          placeholderTextColor={isDark ? '#AAA' : '#888'}
+          placeholderTextColor={themeColors.placeholder}
           value={title}
           onChangeText={setTitle}
         />
@@ -257,8 +256,8 @@ export default function NoteScreen() {
       {selectedTags.length > 0 && (
         <View style={styles.tagsContainer}>
           {selectedTags.map((tag, index) => (
-            <View key={index} style={[styles.tagChip, { backgroundColor: isDark ? '#ffffff19' : '#f1f3f435' }]}>
-              <Text style={[styles.tagChipText, { color: isDark ? '#ffffffff' : '#333' }]}>{tag}</Text>
+            <View key={index} style={[styles.tagChip, { backgroundColor: themeColors.tagChipBg }]}>
+              <Text style={[styles.tagChipText, { color: themeColors.tagChipText }]}>{tag}</Text>
               {/* <TouchableOpacity onPress={() => setSelectedTags(selectedTags.filter((t) => t !== tag))}>
                 <X color={isDark ? '#AAA' : '#666'} size={14} style={{ marginLeft: 6 }} />
               </TouchableOpacity> */}
@@ -272,7 +271,7 @@ export default function NoteScreen() {
           initialContent={existingNote?.content || ''}
           onChange={setContent}
           sizes={editorSizes}
-          textColor={isDark ? '#FFF' : '#333'}
+          textColor={themeColors.text}
           backgroundColor={currentBgColor}
           backgroundPattern={activeBackgroundPattern}
           formatCommand={formatCommand}
@@ -310,12 +309,12 @@ export default function NoteScreen() {
           width: '100%',
           zIndex: 999,
           padding: 10,
-          backgroundColor: isDark ? '#ffffff10' : '#ffffffdd'
+          backgroundColor: themeColors.formatBarBg
         }}>
           {isOnline && <GestureDetector gesture={gesture}>
             <TouchableOpacity
               style={{ height: 'auto', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }}>
-              <Text style={[{ color: isDark ? '#FFF' : '#333' }]}>{selectedFont + ''}</Text>
+              <Text style={[{ color: themeColors.text }]}>{selectedFont + ''}</Text>
             </TouchableOpacity>
           </GestureDetector>}
           <ScrollView
@@ -459,6 +458,7 @@ const styles = StyleSheet.create({
   },
   titleInput: {
     fontSize: 24,
+    fontFamily: Typography.regular,
     fontWeight: '400',
     marginBottom: 8,
   },
@@ -482,6 +482,7 @@ const styles = StyleSheet.create({
   },
   fmtBtnText: {
     fontSize: 13,
+    fontFamily: Typography.medium,
     fontWeight: '600',
     padding: 5
   },
@@ -512,6 +513,7 @@ const styles = StyleSheet.create({
   },
   tagChipText: {
     fontSize: 12,
+    fontFamily: Typography.medium,
     fontWeight: '500',
   },
   modalOverlay: {
@@ -540,6 +542,7 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: 14,
+    fontFamily: Typography.medium,
     fontWeight: '500',
   },
   menuSeparator: {

@@ -4,11 +4,13 @@ import { router } from "expo-router";
 import { Check, Plus, Tag } from "lucide-react-native";
 import { useState } from "react";
 import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { Colors, Typography } from "@/constants/theme";
 
 export default function SelectionList() {
     const [newTagInput, setNewTagInput] = useState('');
     const tags = useNoteStore((s) => s.tags);
     const isDark = useColorScheme() === 'dark';
+    const themeColors = isDark ? Colors.dark : Colors.light;
     const { selectedTags, setSelectedTags, addTag } = useNoteStore();
     const { height } = useWindowDimensions();
 
@@ -40,29 +42,29 @@ export default function SelectionList() {
         router.back();
     }
     return (
-        <View style={[styles.modalContent, { backgroundColor: isDark ? '#222' : '#ffffff06' }]}>
+        <View style={[styles.modalContent, { backgroundColor: themeColors.menuBg }]}>
             <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: isDark ? '#FFF' : '#333' }]}>Label note</Text>
+                <Text style={[styles.modalTitle, { color: themeColors.text }]}>Label note</Text>
                 <TouchableOpacity onPress={handleSaveAndGoBack}>
-                    <Text style={{ color: '#FF6347', fontWeight: 'bold', fontSize: 16 }}>Done</Text>
+                    <Text style={{ color: themeColors.tomatoRed, fontFamily: Typography.bold, fontSize: 16 }}>Done</Text>
                 </TouchableOpacity>
             </View>
 
 
             {/* Quick search/create input */}
-            <View style={[styles.modalInputRow, { borderBottomColor: isDark ? '#444' : '#E0E0E0' }]}>
-                <Tag color={isDark ? '#AAA' : '#666'} size={18} />
+            <View style={[styles.modalInputRow, { borderBottomColor: themeColors.border }]}>
+                <Tag color={themeColors.icon} size={18} />
                 <TextInput
-                    style={[styles.modalInput, { color: isDark ? '#FFF' : '#333' }]}
+                    style={[styles.modalInput, { color: themeColors.text }]}
                     placeholder="Enter label name"
-                    placeholderTextColor={isDark ? '#AAA' : '#888'}
+                    placeholderTextColor={themeColors.placeholder}
                     value={newTagInput}
                     onChangeText={setNewTagInput}
                     onSubmitEditing={handleCreateAndSelectTag}
                 />
 
                 <TouchableOpacity onPress={newTagInput.trim() !== '' ? handleCreateAndSelectTag : () => { }}>
-                    <Plus color={newTagInput.trim() !== '' ? "#FF6347" : "#b5b3b3ff"} size={22} />
+                    <Plus color={newTagInput.trim() !== '' ? themeColors.tomatoRed : themeColors.iconSubtle} size={22} />
                 </TouchableOpacity>
 
             </View>
@@ -81,12 +83,12 @@ export default function SelectionList() {
                             style={styles.modalTagItem}
                             onPress={() => toggleTagSelection(tag)}
                         >
-                            <Tag color={isDark ? '#AAA' : '#666'} size={18} />
-                            <Text style={[styles.modalTagText, { color: isDark ? '#FFF' : '#333' }]}>{tag}</Text>
+                            <Tag color={themeColors.icon} size={18} />
+                            <Text style={[styles.modalTagText, { color: themeColors.text }]}>{tag}</Text>
                             <View style={[
                                 styles.checkbox,
-                                { borderColor: isDark ? '#555' : '#CCC' },
-                                isSelected && { backgroundColor: '#FF6347', borderColor: '#FF6347' }
+                                { borderColor: themeColors.borderLight },
+                                isSelected && { backgroundColor: themeColors.tomatoRed, borderColor: themeColors.tomatoRed }
                             ]}>
                                 {isSelected && <Check color="#FFF" size={12} />}
                             </View>
@@ -94,7 +96,7 @@ export default function SelectionList() {
                     );
                 })}
                 {tags.length === 0 && (
-                    <Text style={{ textAlign: 'center', color: isDark ? '#777' : '#999', marginVertical: 20 }}>
+                    <Text style={{ textAlign: 'center', color: themeColors.subtitle, fontFamily: Typography.regular, marginVertical: 20 }}>
                         No labels found. Create one above!
                     </Text>
                 )}
@@ -128,7 +130,7 @@ const styles = StyleSheet.create({
     },
     modalTitle: {
         fontSize: 18,
-        fontWeight: 'bold',
+        fontFamily: Typography.bold,
     },
     modalInputRow: {
         flexDirection: 'row',
@@ -140,6 +142,7 @@ const styles = StyleSheet.create({
         flex: 1,
         height: 40,
         fontSize: 16,
+        fontFamily: Typography.regular,
     },
     modalTagItem: {
         flexDirection: 'row',
@@ -150,6 +153,7 @@ const styles = StyleSheet.create({
     modalTagText: {
         flex: 1,
         fontSize: 16,
+        fontFamily: Typography.regular,
     },
     checkbox: {
         width: 20,

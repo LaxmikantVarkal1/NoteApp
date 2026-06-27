@@ -7,8 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const TOMATO_RED = '#FF6347';
+import { Colors, Typography } from '@/constants/theme';
 
 export default function NotesScreen() {
   const insets = useSafeAreaInsets();
@@ -19,6 +18,7 @@ export default function NotesScreen() {
   const [showTags, setShowTags] = useState(false);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const themeColors = isDark ? Colors.dark : Colors.light;
 
   useEffect(() => {
     loadNotes();
@@ -52,21 +52,21 @@ export default function NotesScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? '#111' : '#FFF', paddingTop: insets.top }]}>
-      <View style={[styles.searchContainer, { backgroundColor: isDark ? '#333' : '#F1F3F4' }]}>
+    <View style={[styles.container, { backgroundColor: themeColors.background, paddingTop: insets.top }]}>
+      <View style={[styles.searchContainer, { backgroundColor: themeColors.cardBackground }]}>
         <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}>
-          <Menu color={isDark ? '#FFF' : '#333'} size={24} />
+          <Menu color={themeColors.text} size={24} />
         </TouchableOpacity>
         <TextInput
-          style={[styles.searchInput, { color: isDark ? '#FFF' : '#333' }]}
+          style={[styles.searchInput, { color: themeColors.text }]}
           placeholder="Search your notes"
-          placeholderTextColor={isDark ? '#AAA' : '#666'}
+          placeholderTextColor={themeColors.placeholder}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
         <TouchableOpacity>
-          <FilterIcon onPress={() => setShowTags(!showTags)} color={isDark ? '#FFF' : '#333'} size={20} />
-          {(selectedTag?.length || 0) > 0 && <View style={{ position: 'absolute', backgroundColor: TOMATO_RED, width: 6, height: 6, borderRadius: 6 }}><Text>4</Text></View>}
+          <FilterIcon onPress={() => setShowTags(!showTags)} color={themeColors.text} size={20} />
+          {(selectedTag?.length || 0) > 0 && <View style={{ position: 'absolute', backgroundColor: themeColors.tomatoRed, width: 6, height: 6, borderRadius: 6 }} />}
         </TouchableOpacity>
       </View>
 
@@ -81,15 +81,14 @@ export default function NotesScreen() {
             <TouchableOpacity
               style={[
                 styles.filterChip,
-                !selectedTag && styles.activeFilterChip,
-                { borderColor: isDark ? '#444' : '#E0E0E0' }
+                !selectedTag && { backgroundColor: themeColors.tomatoRed, borderColor: themeColors.tomatoRed },
+                { borderColor: themeColors.border }
               ]}
               onPress={() => setSelectedTag(null)}
             >
               <Text style={[
                 styles.filterChipText,
-                { color: isDark ? '#FFF' : '#333' },
-                !selectedTag && styles.activeFilterChipText
+                { color: !selectedTag ? '#FFF' : themeColors.text }
               ]}>All</Text>
             </TouchableOpacity>
             {tags.map((tag) => {
@@ -99,15 +98,14 @@ export default function NotesScreen() {
                   key={tag}
                   style={[
                     styles.filterChip,
-                    isSelected && styles.activeFilterChip,
-                    { borderColor: isDark ? '#444' : '#E0E0E0' }
+                    isSelected && { backgroundColor: themeColors.tomatoRed, borderColor: themeColors.tomatoRed },
+                    { borderColor: themeColors.border }
                   ]}
                   onPress={() => setSelectedTag(tag)}
                 >
                   <Text style={[
                     styles.filterChipText,
-                    { color: isDark ? '#FFF' : '#333' },
-                    isSelected && styles.activeFilterChipText
+                    { color: isSelected ? '#FFF' : themeColors.text }
                   ]}>{tag}</Text>
                 </TouchableOpacity>
               );
@@ -119,20 +117,20 @@ export default function NotesScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {notes.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyTitle, { color: isDark ? '#FFF' : '#333' }]}>Keep your thoughts organized</Text>
-            <Text style={[styles.emptySub, { color: isDark ? '#AAA' : '#666' }]}>Notes you add appear here</Text>
+            <Text style={[styles.emptyTitle, { color: themeColors.text }]}>Keep your thoughts organized</Text>
+            <Text style={[styles.emptySub, { color: themeColors.subtitle }]}>Notes you add appear here</Text>
           </View>
         ) : (
           <>
             {pinnedNotes.length > 0 && (
               <>
-                <Text style={[styles.sectionTitle, { color: isDark ? '#AAA' : '#666' }]}>PINNED</Text>
+                <Text style={[styles.sectionTitle, { color: themeColors.subtitle }]}>PINNED</Text>
                 {renderNoteColumns(pinnedNotes)}
               </>
             )}
             {otherNotes.length > 0 && (
               <>
-                {pinnedNotes.length > 0 && <Text style={[styles.sectionTitle, { color: isDark ? '#AAA' : '#666', marginTop: 20 }]}>OTHERS</Text>}
+                {pinnedNotes.length > 0 && <Text style={[styles.sectionTitle, { color: themeColors.subtitle, marginTop: 20 }]}>OTHERS</Text>}
                 {renderNoteColumns(otherNotes)}
               </>
             )}
@@ -141,7 +139,7 @@ export default function NotesScreen() {
       </ScrollView>
 
       <TouchableOpacity
-        style={[styles.fab, { backgroundColor: TOMATO_RED }]}
+        style={[styles.fab, { backgroundColor: themeColors.tomatoRed }]}
         onPress={() => router.push('/note/new')}
       >
         <Plus color="#FFF" size={32} />
@@ -161,27 +159,28 @@ function NoteCard({ note, index }: { note: any; index: number }) {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const bgColor = note.color || (isDark ? '#333' : '#FFF');
+  const themeColors = isDark ? Colors.dark : Colors.light;
+  const bgColor = note.color || themeColors.cardBackground;
   const plainTextContent = stripHtml(note.content);
 
   return (
     <Animated.View entering={FadeInUp.delay(index * 100).springify()}>
       <TouchableOpacity
-        style={[styles.noteCard, { backgroundColor: bgColor, borderColor: isDark ? '#444' : '#E0E0E0' }]}
+        style={[styles.noteCard, { backgroundColor: bgColor, borderColor: themeColors.border }]}
         onPress={() => router.push(`/note/${note.id}`)}
       >
-        {note.title ? <Text style={[styles.noteTitle, { color: isDark ? '#FFF' : '#333' }]}>{note.title}</Text> : null}
+        {note.title ? <Text style={[styles.noteTitle, { color: themeColors.text }]}>{note.title}</Text> : null}
         {plainTextContent ? (
-          <Text style={[styles.noteContent, { color: isDark ? '#DDD' : '#555' }]} numberOfLines={6}>
+          <Text style={[styles.noteContent, { color: themeColors.text }]} numberOfLines={6}>
             {plainTextContent}
           </Text>
         ) : null}
-        {note.pinned && <Pin size={16} color={isDark ? '#AAA' : '#666'} style={styles.pinIcon} />}
+        {note.pinned && <Pin size={16} color={themeColors.icon} style={styles.pinIcon} />}
         {note.tags && note.tags.length > 0 && (
           <View style={styles.cardTagsContainer}>
             {note.tags.map((tag: string) => (
-              <View key={tag} style={[styles.cardTagChip, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
-                <Text style={[styles.cardTagChipText, { color: isDark ? '#CCC' : '#666' }]}>{tag}</Text>
+              <View key={tag} style={[styles.cardTagChip, { backgroundColor: themeColors.tagChipBg }]}>
+                <Text style={[styles.cardTagChipText, { color: themeColors.tagChipText }]}>{tag}</Text>
               </View>
             ))}
           </View>
@@ -212,6 +211,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 12,
     fontSize: 16,
+    fontFamily: Typography.regular,
   },
   scrollContent: {
     padding: 16,
@@ -224,16 +224,17 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: Typography.bold,
     marginTop: 20,
   },
   emptySub: {
     fontSize: 16,
+    fontFamily: Typography.regular,
     marginTop: 8,
   },
   sectionTitle: {
     fontSize: 12,
-    fontWeight: 'bold',
+    fontFamily: Typography.bold,
     marginBottom: 12,
     marginLeft: 4,
   },
@@ -253,11 +254,12 @@ const styles = StyleSheet.create({
   },
   noteTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: Typography.bold,
     marginBottom: 8,
   },
   noteContent: {
     fontSize: 14,
+    fontFamily: Typography.regular,
     lineHeight: 20,
   },
   pinIcon: {
@@ -296,16 +298,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     backgroundColor: 'transparent',
   },
-  activeFilterChip: {
-    backgroundColor: '#FF6347',
-    borderColor: '#FF6347',
-  },
   filterChipText: {
     fontSize: 14,
-    fontWeight: '500',
-  },
-  activeFilterChipText: {
-    color: '#FFF',
+    fontFamily: Typography.medium,
   },
   cardTagsContainer: {
     flexDirection: 'row',
@@ -320,6 +315,6 @@ const styles = StyleSheet.create({
   },
   cardTagChipText: {
     fontSize: 10,
-    fontWeight: '500',
+    fontFamily: Typography.medium,
   },
 });

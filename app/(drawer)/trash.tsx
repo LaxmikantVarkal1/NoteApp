@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Colors, Typography } from '@/constants/theme';
 
 export default function TrashScreen() {
   const insets = useSafeAreaInsets();
@@ -15,6 +16,7 @@ export default function TrashScreen() {
   const { notes, loadNotes, emptyTrash, settings } = useNoteStore();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const themeColors = isDark ? Colors.dark : Colors.light;
 
   const [visibleCount, setVisibleCount] = useState(20);
 
@@ -65,11 +67,11 @@ export default function TrashScreen() {
     );
   };
 
-  const textColor = isDark ? '#FFF' : '#333';
-  const subtitleColor = isDark ? '#AAA' : '#666';
+  const textColor = themeColors.text;
+  const subtitleColor = themeColors.subtitle;
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? '#111' : '#FFF', paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: themeColors.background, paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())} style={styles.iconButton}>
@@ -79,13 +81,13 @@ export default function TrashScreen() {
         <View style={{ flex: 1 }} />
         {trashedNotes.length > 0 && (
           <TouchableOpacity onPress={handleEmptyTrash} style={styles.emptyTrashButton}>
-            <Text style={styles.emptyTrashText}>Empty Trash</Text>
+            <Text style={[styles.emptyTrashText, { color: themeColors.tomatoRed }]}>Empty Trash</Text>
           </TouchableOpacity>
         )}
       </View>
 
       {/* Warning label */}
-      <View style={[styles.infoBanner, { backgroundColor: isDark ? '#222' : '#F1F3F4' }]}>
+      <View style={[styles.infoBanner, { backgroundColor: themeColors.infoBannerBg }]}>
         <Text style={[styles.infoText, { color: subtitleColor }]}>
           Notes in Trash are deleted permanently after {settings.trashAutoDeleteDays} days.
         </Text>
@@ -119,7 +121,8 @@ function NoteCard({ note, index, autoDeleteDays }: { note: any; index: number; a
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const bgColor = note.color || (isDark ? '#333' : '#FFF');
+  const themeColors = isDark ? Colors.dark : Colors.light;
+  const bgColor = note.color || themeColors.cardBackground;
   const plainTextContent = stripHtml(note.content);
 
   // Calculate days left
@@ -134,19 +137,19 @@ function NoteCard({ note, index, autoDeleteDays }: { note: any; index: number; a
   return (
     <Animated.View entering={FadeInUp.delay(index * 100).springify()}>
       <TouchableOpacity
-        style={[styles.noteCard, { backgroundColor: bgColor, borderColor: isDark ? '#444' : '#E0E0E0' }]}
+        style={[styles.noteCard, { backgroundColor: bgColor, borderColor: themeColors.border }]}
         onPress={() => router.push(`/note/${note.id}`)}
       >
-        {note.title ? <Text style={[styles.noteTitle, { color: isDark ? '#FFF' : '#333' }]}>{note.title}</Text> : null}
+        {note.title ? <Text style={[styles.noteTitle, { color: themeColors.text }]}>{note.title}</Text> : null}
         {plainTextContent ? (
-          <Text style={[styles.noteContent, { color: isDark ? '#DDD' : '#555' }]} numberOfLines={6}>
+          <Text style={[styles.noteContent, { color: themeColors.text }]} numberOfLines={6}>
             {plainTextContent}
           </Text>
         ) : null}
         
         {daysLeftText ? (
           <View style={styles.daysLeftBadge}>
-            <Text style={styles.daysLeftText}>{daysLeftText}</Text>
+            <Text style={[styles.daysLeftText, { color: themeColors.tomatoRed }]}>{daysLeftText}</Text>
           </View>
         ) : null}
       </TouchableOpacity>
@@ -170,7 +173,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: Typography.bold,
   },
   emptyTrashButton: {
     paddingVertical: 8,
@@ -178,9 +181,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   emptyTrashText: {
-    color: '#FF6347',
     fontWeight: '600',
     fontSize: 14,
+    fontFamily: Typography.bold,
   },
   infoBanner: {
     paddingVertical: 10,
@@ -189,6 +192,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 13,
+    fontFamily: Typography.regular,
     textAlign: 'center',
   },
   scrollContent: {
@@ -202,7 +206,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: Typography.bold,
     marginTop: 20,
   },
   columnsContainer: {
@@ -221,11 +225,12 @@ const styles = StyleSheet.create({
   },
   noteTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: Typography.bold,
     marginBottom: 8,
   },
   noteContent: {
     fontSize: 14,
+    fontFamily: Typography.regular,
     lineHeight: 20,
   },
   daysLeftBadge: {
@@ -237,8 +242,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   daysLeftText: {
-    color: '#FF6347',
     fontSize: 10,
-    fontWeight: '600',
+    fontFamily: Typography.medium,
   },
 });

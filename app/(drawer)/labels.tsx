@@ -5,8 +5,7 @@ import { ArrowLeft, Check, Edit2, Tag, Trash2 } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const TOMATO_RED = '#FF6347';
+import { Colors, Typography } from '@/constants/theme';
 
 export default function LabelsScreen() {
   const selectedTags = ["ggfgh"]
@@ -16,6 +15,7 @@ export default function LabelsScreen() {
   const { tags, loadNotes, addTag, deleteTag, updateTag } = useNoteStore();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const themeColors = isDark ? Colors.dark : Colors.light;
 
   const [newTagName, setNewTagName] = useState('');
   const [editingTag, setEditingTag] = useState<string | null>(null);
@@ -47,12 +47,12 @@ export default function LabelsScreen() {
     setEditingName(tag);
   };
 
-  const itemBg = isDark ? '#222' : '#F9F9F9';
-  const textColor = isDark ? '#FFF' : '#333';
-  const iconColor = isDark ? '#AAA' : '#666';
+  const itemBg = themeColors.itemBg;
+  const textColor = themeColors.text;
+  const iconColor = themeColors.icon;
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? '#111' : '#FFF', paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: themeColors.background, paddingTop: insets.top }]}>
       {/* Header */}
       {/* <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())} style={styles.iconButton}>
@@ -63,7 +63,7 @@ export default function LabelsScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         {/* Create tag row */}
-        <View style={[styles.inputRow, { borderBottomColor: isDark ? '#333' : '#E0E0E0' }]}>
+        <View style={[styles.inputRow, { borderBottomColor: themeColors.border }]}>
           {/* <TouchableOpacity 
             onPress={() => isInputFocused ? setIsInputFocused(false) : null} 
             style={styles.actionButton}
@@ -84,7 +84,7 @@ export default function LabelsScreen() {
           <TextInput
             style={[styles.input, { color: textColor }]}
             placeholder="  Create new label"
-            placeholderTextColor={isDark ? '#AAA' : '#888'}
+            placeholderTextColor={themeColors.placeholder}
             value={newTagName}
             onChangeText={setNewTagName}
             onFocus={() => setIsInputFocused(true)}
@@ -93,7 +93,7 @@ export default function LabelsScreen() {
 
           {isInputFocused && (
             <TouchableOpacity onPress={handleCreateTag} style={styles.actionButton}>
-              <Check color={TOMATO_RED} size={22} />
+              <Check color={themeColors.tomatoRed} size={22} />
             </TouchableOpacity>
           )}
         </View>
@@ -106,7 +106,7 @@ export default function LabelsScreen() {
               <View key={tag} style={[styles.tagRow, { backgroundColor: isEditingThis ? "#ff7a3d1c" : itemBg }]}>
                 {isEditingThis ? (
                   <TouchableOpacity onPress={() => deleteTag(tag)} style={styles.actionButton}>
-                    <Trash2 color={TOMATO_RED} size={20} />
+                    <Trash2 color={themeColors.tomatoRed} size={20} />
                   </TouchableOpacity>
                 ) : (
                   <View style={styles.tagIconWrapper}>
@@ -129,7 +129,7 @@ export default function LabelsScreen() {
 
                 {isEditingThis ? (
                   <TouchableOpacity onPress={() => handleSaveRename(tag)} style={styles.actionButton}>
-                    <Check color={TOMATO_RED} size={20} />
+                    <Check color={themeColors.tomatoRed} size={20} />
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity onPress={() => startEditing(tag)} style={styles.actionButton}>
@@ -141,8 +141,8 @@ export default function LabelsScreen() {
           })}
           {tags.length === 0 && (
             <View style={styles.emptyContainer}>
-              <Tag color={isDark ? '#333' : '#E0E0E0'} size={64} />
-              <Text style={[styles.emptyText, { color: isDark ? '#555' : '#AAA' }]}>No labels created yet</Text>
+              <Tag color={themeColors.border} size={64} />
+              <Text style={[styles.emptyText, { color: themeColors.subtitle }]}>No labels created yet</Text>
             </View>
           )}
         </View>
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: Typography.bold,
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -184,6 +184,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingHorizontal: 0,
     height: 40,
+    fontFamily: Typography.regular,
   },
   actionButton: {
     padding: 10,
@@ -207,12 +208,14 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     paddingHorizontal: 12,
+    fontFamily: Typography.regular,
   },
   editInput: {
     flex: 1,
     fontSize: 16,
     paddingHorizontal: 12,
-    height: 40
+    height: 40,
+    fontFamily: Typography.regular,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -222,6 +225,6 @@ const styles = StyleSheet.create({
   emptyText: {
     marginTop: 16,
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: Typography.medium,
   },
 });

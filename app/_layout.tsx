@@ -3,8 +3,14 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
+import React, { useEffect } from 'react';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+
+// Prevent the splash screen from auto-hiding before asset loading is complete.
+SplashScreen.preventAutoHideAsync();
 
 export const unstable_settings = {
   initialRouteName: '(drawer)',
@@ -12,6 +18,23 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+
+  const [loaded, error] = useFonts({
+    'Ubuntu-Light': require('../assets/fonts/Ubuntu-Light.ttf'),
+    'Ubuntu-Regular': require('../assets/fonts/Ubuntu-Regular.ttf'),
+    'Ubuntu-Medium': require('../assets/fonts/Ubuntu-Medium.ttf'),
+    'Ubuntu-Bold': require('../assets/fonts/Ubuntu-Bold.ttf'),
+  });
+
+  useEffect(() => {
+    if (loaded || error) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded, error]);
+
+  if (!loaded && !error) {
+    return null;
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

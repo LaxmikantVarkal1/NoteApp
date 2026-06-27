@@ -6,8 +6,7 @@ import { BarChart2, Calendar, Menu, Trash2 } from 'lucide-react-native';
 import React, { useEffect } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const TOMATO_RED = '#FF6347';
+import { Colors, Typography } from '@/constants/theme';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -15,6 +14,7 @@ export default function SettingsScreen() {
   const { notes, settings, setTrashAutoDeleteDays, clearAllData, loadNotes } = useNoteStore();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const themeColors = isDark ? Colors.dark : Colors.light;
 
   useEffect(() => {
     loadNotes();
@@ -52,13 +52,13 @@ export default function SettingsScreen() {
     { label: "30 Days", value: 30 },
   ];
 
-  const textColor = isDark ? '#FFF' : '#333';
-  const subtitleColor = isDark ? '#AAA' : '#666';
-  const itemBg = isDark ? '#222' : '#F9F9F9';
-  const borderColor = isDark ? '#333' : '#E0E0E0';
+  const textColor = themeColors.text;
+  const subtitleColor = themeColors.subtitle;
+  const itemBg = themeColors.itemBg;
+  const borderColor = themeColors.border;
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? '#111' : '#FFF', paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: themeColors.background, paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())} style={styles.iconButton}>
@@ -71,7 +71,7 @@ export default function SettingsScreen() {
         {/* Retention Period Setting */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Calendar color={TOMATO_RED} size={20} />
+            <Calendar color={themeColors.tomatoRed} size={20} />
             <Text style={[styles.sectionTitle, { color: textColor }]}>Trash Retention Period</Text>
           </View>
           <Text style={[styles.sectionDescription, { color: subtitleColor }]}>
@@ -87,7 +87,7 @@ export default function SettingsScreen() {
                   style={[
                     styles.optionRow,
                     {
-                      backgroundColor: isSelected ? (isDark ? '#333' : '#FFF0EE') : itemBg,
+                      backgroundColor: isSelected ? themeColors.tabActiveBg : itemBg,
                       borderBottomWidth: index < retentionOptions.length - 1 ? 1 : 0,
                       borderBottomColor: borderColor
                     }
@@ -97,16 +97,16 @@ export default function SettingsScreen() {
                   <Text style={[
                     styles.optionLabel,
                     {
-                      color: isSelected ? TOMATO_RED : textColor,
-                      fontWeight: isSelected ? '600' : '400'
+                      color: isSelected ? themeColors.tomatoRed : textColor,
+                      fontFamily: isSelected ? Typography.bold : Typography.regular
                     }
                   ]}>
                     {opt.label}
                   </Text>
                   <View style={[
                     styles.radioCircle,
-                    { borderColor: isDark ? '#555' : '#CCC' },
-                    isSelected && { borderColor: TOMATO_RED, backgroundColor: TOMATO_RED }
+                    { borderColor: themeColors.borderLight },
+                    isSelected && { borderColor: themeColors.tomatoRed, backgroundColor: themeColors.tomatoRed }
                   ]}>
                     {isSelected && <View style={styles.radioInner} />}
                   </View>
@@ -119,7 +119,7 @@ export default function SettingsScreen() {
         {/* Note Statistics */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <BarChart2 color={TOMATO_RED} size={20} />
+            <BarChart2 color={themeColors.tomatoRed} size={20} />
             <Text style={[styles.sectionTitle, { color: textColor }]}>Statistics</Text>
           </View>
 
@@ -149,13 +149,13 @@ export default function SettingsScreen() {
 
         {/* Danger Zone */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: TOMATO_RED, marginBottom: 12 }]}>Danger Zone</Text>
+          <Text style={[styles.sectionTitle, { color: themeColors.tomatoRed, marginBottom: 12 }]}>Danger Zone</Text>
           <TouchableOpacity
-            style={[styles.dangerButton, { borderColor: TOMATO_RED }]}
+            style={[styles.dangerButton, { borderColor: themeColors.tomatoRed }]}
             onPress={handleClearAll}
           >
-            <Trash2 color={TOMATO_RED} size={20} />
-            <Text style={styles.dangerButtonText}>Clear All Data</Text>
+            <Trash2 color={themeColors.tomatoRed} size={20} />
+            <Text style={[styles.dangerButtonText, { color: themeColors.tomatoRed }]}>Clear All Data</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: Typography.bold,
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -197,10 +197,11 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: Typography.bold,
   },
   sectionDescription: {
     fontSize: 14,
+    fontFamily: Typography.regular,
     marginBottom: 16,
     lineHeight: 20,
   },
@@ -217,6 +218,7 @@ const styles = StyleSheet.create({
   },
   optionLabel: {
     fontSize: 16,
+    fontFamily: Typography.regular,
   },
   radioCircle: {
     width: 20,
@@ -244,10 +246,11 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 15,
+    fontFamily: Typography.regular,
   },
   statValue: {
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: Typography.medium,
   },
   dangerButton: {
     flexDirection: 'row',
@@ -260,8 +263,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   dangerButtonText: {
-    color: TOMATO_RED,
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: Typography.bold,
   },
 });

@@ -1,12 +1,11 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Below are the colors and typography used across the app.
  */
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+const tintColorLight = '#FF6347'; // Centralized primary accent tint color (TOMATO_RED)
+const tintColorDark = '#FF6347';
 
 interface CustomFont {
   url: string;
@@ -30,23 +29,80 @@ export const CustomFonts: Record<string, CustomFont> = {
     url: "https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap",
     name: "Roboto"
   }
+};
 
-}
+export const Typography = {
+  light: 'Ubuntu-Light',
+  regular: 'Ubuntu-Regular',
+  medium: 'Ubuntu-Medium',
+  bold: 'Ubuntu-Bold',
+};
+
+export const NoteColors = {
+  light: ['#FFFFFF', '#FFD1CA', '#CFF1D7', '#D0E6F9', '#FFF3B8'],
+  dark: ['#111111', '#4A1D1A', '#1C3322', '#1B2C3B', '#3B3A1C'],
+};
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
+    text: '#333333',
+    subtitle: '#666666',
+    background: '#FFFFFF',
+    cardBackground: '#FFFFFF',
+    border: '#E0E0E0',
+    borderLight: '#CCC',
+    borderDark: '#555',
+    itemBg: '#F9F9F9',
+    tomatoRed: '#FF6347',
     tint: tintColorLight,
-    icon: '#687076',
+    icon: '#666666',
+    iconSubtle: '#33333343',
+    iconActive: '#000000ff',
+    placeholder: '#888888',
+    tagChipBg: '#f1f3f435',
+    tagChipText: '#333333',
+    bottomBarBg: '#F8F9FA',
+    formatBarBg: '#ffffffdd',
+    menuBg: '#FFFFFF',
+    menuBorder: '#E8E8E8',
+    menuText: '#333333',
+    menuIcon: '#666666',
+    deleteColor: '#E53935',
+    statLabel: '#666666',
+    statValue: '#333333',
+    infoBannerBg: '#F1F3F4',
+    tabActiveBg: '#FFF0EE',
     tabIconDefault: '#687076',
     tabIconSelected: tintColorLight,
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
+    text: '#FFFFFF',
+    subtitle: '#AAAAAA',
+    background: '#111111',
+    cardBackground: '#222222',
+    border: '#333333',
+    borderLight: '#555',
+    borderDark: '#777',
+    itemBg: '#222222',
+    tomatoRed: '#FF6347',
     tint: tintColorDark,
-    icon: '#9BA1A6',
+    icon: '#AAAAAA',
+    iconSubtle: '#ffffff39',
+    iconActive: '#ffffffff',
+    placeholder: '#AAAAAA',
+    tagChipBg: '#ffffff19',
+    tagChipText: '#FFFFFF',
+    bottomBarBg: '#222222',
+    formatBarBg: '#ffffff10',
+    menuBg: '#222222',
+    menuBorder: '#333333',
+    menuText: '#FFFFFF',
+    menuIcon: '#AAAAAA',
+    deleteColor: '#FF6B6B',
+    statLabel: '#AAAAAA',
+    statValue: '#FFFFFF',
+    infoBannerBg: '#222222',
+    tabActiveBg: '#333333',
     tabIconDefault: '#9BA1A6',
     tabIconSelected: tintColorDark,
   },
@@ -54,13 +110,9 @@ export const Colors = {
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
     sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
     serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
     rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
     mono: 'ui-monospace',
   },
   default: {
@@ -76,3 +128,4 @@ export const Fonts = Platform.select({
     mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
   },
 });
+

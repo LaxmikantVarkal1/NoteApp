@@ -3,14 +3,15 @@ import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { Drawer } from 'expo-router/drawer';
 import { Archive, FileText, HelpCircle, Settings, Tag, Trash2 } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
-
-const TOMATO_RED = '#FF6347';
+import { Colors, Typography } from '@/constants/theme';
 
 function CustomDrawerContent(props: any) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const textColor = isDark ? '#FFF' : '#333';
-  const iconColor = isDark ? '#AAA' : '#666';
+  const themeColors = isDark ? Colors.dark : Colors.light;
+  const textColor = themeColors.text;
+  const iconColor = themeColors.icon;
+  const tomatoRed = themeColors.tomatoRed;
 
   const currentRouteName = props.state.routes[props.state.index].name;
 
@@ -18,10 +19,10 @@ function CustomDrawerContent(props: any) {
     const isFocused = currentRouteName === routeName;
     return {
       focused: isFocused,
-      activeTintColor: TOMATO_RED,
+      activeTintColor: tomatoRed,
       inactiveTintColor: textColor,
-      activeBackgroundColor: isDark ? '#333' : '#FFF0EE',
-      labelStyle: { color: isFocused ? TOMATO_RED : textColor, fontWeight: '500' },
+      activeBackgroundColor: themeColors.tabActiveBg,
+      labelStyle: { color: isFocused ? tomatoRed : textColor, fontFamily: Typography.medium },
       onPress: () => props.navigation.navigate(routeName),
     };
   };
@@ -29,50 +30,45 @@ function CustomDrawerContent(props: any) {
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0 }}>
       <View style={styles.drawerHeader}>
-        <Text style={[styles.drawerTitle, { color: TOMATO_RED }]}>Keep Notes</Text>
+        <Text style={[styles.drawerTitle, { color: tomatoRed }]}>Keep Notes</Text>
       </View>
 
       <DrawerItem
         label="Notes"
-        icon={({ size }) => <FileText color={currentRouteName === 'index' ? TOMATO_RED : iconColor} size={size} />}
+        icon={({ size }) => <FileText color={currentRouteName === 'index' ? tomatoRed : iconColor} size={size} />}
         {...getDrawerItemProps('index')}
       />
       <DrawerItem
         label="Labels"
-        icon={({ size }) => <Tag color={currentRouteName === 'labels' ? TOMATO_RED : iconColor} size={size} />}
+        icon={({ size }) => <Tag color={currentRouteName === 'labels' ? tomatoRed : iconColor} size={size} />}
         {...getDrawerItemProps('labels')}
       />
-      {/* <DrawerItem
-        label="Reminders"
-        icon={({ size }) => <Bell color={currentRouteName === 'reminders' ? TOMATO_RED : iconColor} size={size} />}
-        {...getDrawerItemProps('reminders')}
-      /> */}
 
-      <View style={styles.divider} />
+      <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
 
       <DrawerItem
         label="Archive"
-        icon={({ size }) => <Archive color={currentRouteName === 'archive' ? TOMATO_RED : iconColor} size={size} />}
+        icon={({ size }) => <Archive color={currentRouteName === 'archive' ? tomatoRed : iconColor} size={size} />}
         {...getDrawerItemProps('archive')}
       />
       <DrawerItem
         label="Trash"
-        icon={({ size }) => <Trash2 color={currentRouteName === 'trash' ? TOMATO_RED : iconColor} size={size} />}
+        icon={({ size }) => <Trash2 color={currentRouteName === 'trash' ? tomatoRed : iconColor} size={size} />}
         {...getDrawerItemProps('trash')}
       />
 
-      <View style={styles.divider} />
+      <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
 
       <DrawerItem
         label="Settings"
-        icon={({ size }) => <Settings color={currentRouteName === 'settings' ? TOMATO_RED : iconColor} size={size} />}
+        icon={({ size }) => <Settings color={currentRouteName === 'settings' ? tomatoRed : iconColor} size={size} />}
         {...getDrawerItemProps('settings')}
       />
       <DrawerItem
         label="Help & feedback"
         icon={({ size }) => <HelpCircle color={iconColor} size={size} />}
         onPress={() => { }}
-        labelStyle={{ color: textColor }}
+        labelStyle={{ color: textColor, fontFamily: Typography.medium }}
       />
     </DrawerContentScrollView>
   );
@@ -81,17 +77,18 @@ function CustomDrawerContent(props: any) {
 export default function DrawerLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const themeColors = isDark ? Colors.dark : Colors.light;
 
   return (
     <Drawer
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerShown: false,
-        drawerActiveBackgroundColor: isDark ? '#333' : '#FFF0EE',
-        drawerActiveTintColor: TOMATO_RED,
-        drawerInactiveTintColor: isDark ? '#CCC' : '#333',
+        drawerActiveBackgroundColor: themeColors.tabActiveBg,
+        drawerActiveTintColor: themeColors.tomatoRed,
+        drawerInactiveTintColor: themeColors.text,
         drawerStyle: {
-          backgroundColor: isDark ? '#111' : '#FFF',
+          backgroundColor: themeColors.background,
           width: 300,
         },
       }}>
@@ -144,12 +141,11 @@ const styles = StyleSheet.create({
   },
   drawerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: Typography.bold,
     marginLeft: 10,
   },
   divider: {
     height: 1,
-    backgroundColor: '#E0E0E0',
     marginVertical: 10,
   },
 });
