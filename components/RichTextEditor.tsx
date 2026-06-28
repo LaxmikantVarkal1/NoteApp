@@ -430,7 +430,7 @@ export default function RichTextEditor({
 
   const isDark = backgroundColor === '#000' || backgroundColor === '#1a1a2e' || backgroundColor === '#111' || backgroundColor === '#222';
   const tc = textColor;
-  const bg = backgroundColor;
+  let bg = backgroundColor;
   const patternBg = svgToBackgroundImage(backgroundPattern);
   const isLight = !isDark;
   const borderColor = isLight ? '#0000002e' : '#fffdfd1d';
@@ -481,6 +481,10 @@ export default function RichTextEditor({
     const parts = formatCommand.split(':');
     const cmd = parts[0];
     if (!cmd) return;
+    
+    
+
+
 
     if (cmd === 'blockType') {
       const newType = parts[1] as BlockType | undefined;
@@ -548,6 +552,14 @@ export default function RichTextEditor({
     }
 
     if (editorRef.current) {
+        if (cmd === 'bg') {
+            
+  const color = parts[1];
+  editorRef.current.style.backgroundColor=color
+  editorRef.current.style.backgroundImage= patternBg
+ 
+}
+      
       editorRef.current.focus();
     }
     if (savedRangeRef.current) {
@@ -771,8 +783,8 @@ export default function RichTextEditor({
     <div
       className="editor-root"
       style={{
-        backgroundColor: bg,
-        backgroundImage: patternBg,
+        //backgroundColor: bg,
+        //backgroundImage: patternBg,
         backgroundRepeat: 'repeat',
         color: tc,
       }}

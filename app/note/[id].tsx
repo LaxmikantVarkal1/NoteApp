@@ -50,6 +50,11 @@ export default function NoteScreen() {
       duration: 300,
     });
   }, [showPalette]);
+  
+  useEffect(() => {
+     console.log(currentBgColor,"current")
+  setFormatCommand(`bg:${currentBgColor}`);
+}, [color]);
 
   const containerStyle = useAnimatedStyle(() => ({
     height: interpolate(progress.value, [0, 1], [0, 60], Extrapolation.CLAMP),
@@ -297,7 +302,11 @@ export default function NoteScreen() {
                       borderColor: themeColors.text,
                     },
                   ]}
-                  onPress={() => setColor(c === colors[0] ? '' : c)}
+                  onPress={() => {
+                 // setFormatCommand(`bg:${c === colors[0] ? '' : c)}`);
+                  setColor(c === colors[0] ? '' : c)    
+                  }
+                  }
                 />
               ))}
             </ScrollView>
@@ -374,7 +383,7 @@ export default function NoteScreen() {
           onChange={setContent}
           sizes={editorSizes}
           textColor={themeColors.text}
-          backgroundColor={currentBgColor}
+          //backgroundColor={currentBgColor}
           backgroundPattern={activeBackgroundPattern}
           formatCommand={formatCommand}
           onBlockTypeChange={setActiveBlockType}

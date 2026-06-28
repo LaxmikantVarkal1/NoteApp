@@ -170,7 +170,7 @@ function NoteCard({ note, index }: { note: any; index: number }) {
   return (
     <Animated.View entering={FadeInUp.delay(index * 100).springify()}>
       <TouchableOpacity
-        style={[styles.noteCard, { backgroundColor: bgColor, borderColor: themeColors.border }]}
+        style={[styles.noteCard, { backgroundColor: bgColor, borderColor: isDark? themeColors.border : themeColors.iconSubtle }]}
         onPress={() => router.push(`/note/${note.id}`)}
       >
         {note.title ? <Text style={[styles.noteTitle, { color: themeColors.text }]}>{note.title}</Text> : null}
