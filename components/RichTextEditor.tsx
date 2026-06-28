@@ -1,4 +1,5 @@
 "use dom";
+import bgPatterns from '@/constants/bg';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -431,7 +432,7 @@ export default function RichTextEditor({
   const isDark = backgroundColor === '#000' || backgroundColor === '#1a1a2e' || backgroundColor === '#111' || backgroundColor === '#222';
   const tc = textColor;
   let bg = backgroundColor;
-  const patternBg = svgToBackgroundImage(backgroundPattern);
+  // const patternBg = svgToBackgroundImage(backgroundPattern);
   const isLight = !isDark;
   const borderColor = isLight ? '#0000002e' : '#fffdfd1d';
   const accentColor = '#edecf31e';
@@ -481,8 +482,8 @@ export default function RichTextEditor({
     const parts = formatCommand.split(':');
     const cmd = parts[0];
     if (!cmd) return;
-    
-    
+
+
 
 
 
@@ -552,14 +553,16 @@ export default function RichTextEditor({
     }
 
     if (editorRef.current) {
-        if (cmd === 'bg') {
-            
-  const color = parts[1];
-  editorRef.current.style.backgroundColor=color
-  editorRef.current.style.backgroundImage= patternBg
- 
-}
-      
+      if (cmd === 'bg') {
+        const color = parts[1];
+        editorRef.current.style.backgroundColor = color
+      }
+
+      if (cmd === 'pattern') {
+        const activeBackgroundPattern = bgPatterns.find((pattern) => pattern.id === parts[1])?.svg || '';
+        editorRef.current.style.backgroundImage = svgToBackgroundImage(activeBackgroundPattern);
+      }
+
       editorRef.current.focus();
     }
     if (savedRangeRef.current) {
@@ -949,7 +952,7 @@ export default function RichTextEditor({
   appearance: none;
   width: 18px;
   height: 18px;
-  margin-top: 5px;
+  margin-top: 3px;
   border: 2px solid ${accentColor};
   border-radius: 5px;
   cursor: pointer;
@@ -969,7 +972,7 @@ export default function RichTextEditor({
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: bold;
 }
         .checklist-text {

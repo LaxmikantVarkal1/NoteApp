@@ -170,16 +170,22 @@ function NoteCard({ note, index }: { note: any; index: number }) {
   return (
     <Animated.View entering={FadeInUp.delay(index * 100).springify()}>
       <TouchableOpacity
-        style={[styles.noteCard, { backgroundColor: bgColor, borderColor: isDark? themeColors.border : themeColors.iconSubtle }]}
+        style={[styles.noteCard, { backgroundColor: bgColor, borderColor: isDark ? themeColors.border : themeColors.iconSubtle }]}
         onPress={() => router.push(`/note/${note.id}`)}
       >
+        <Text style={{ color: themeColors.iconSubtle, paddingBottom: 6, fontFamily: Typography.regular, textAlign: 'left', fontSize: 10 }}>{new Date(note.createdAt).toDateString()}</Text>
+
         {note.title ? <Text style={[styles.noteTitle, { color: themeColors.text }]}>{note.title}</Text> : null}
         {plainTextContent ? (
           <Text style={[styles.noteContent, { color: themeColors.text }]} numberOfLines={6}>
             {plainTextContent}
           </Text>
         ) : null}
+
+
         {note.pinned && <Pin size={16} color={themeColors.icon} style={styles.pinIcon} />}
+
+
         {note.tags && note.tags.length > 0 && (
           <View style={styles.cardTagsContainer}>
             {note.tags.map((tag: string) => (

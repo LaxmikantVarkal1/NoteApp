@@ -4,10 +4,10 @@ import { Colors, CustomFonts, NoteColors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useNoteStore } from '@/store/useNoteStore';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Archive, ArrowLeft, CheckSquare, CircleDashed, MoreVertical, Palette, Pin, Tag, Trash2 } from 'lucide-react-native';
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Keyboard, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, BackHandler, Keyboard, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { Extrapolation, interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -45,16 +45,39 @@ export default function NoteScreen() {
 
   const progress = useSharedValue(0);
 
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        () => {
+          handleSaveAndGoBack("manual");
+          return true;
+        }
+      );
+
+      return () => subscription.remove();
+    }, [title,
+      content,
+      color,
+      backgroundPattern,
+      pinned,
+      selectedTags,
+      selectedFont,])
+  );
+
   useEffect(() => {
     progress.value = withTiming(showPalette ? 1 : 0, {
       duration: 300,
     });
   }, [showPalette]);
-  
+
   useEffect(() => {
-     console.log(currentBgColor,"current")
-  setFormatCommand(`bg:${currentBgColor}`);
-}, [color]);
+    setFormatCommand(`bg:${currentBgColor}`);
+  }, [color]);
+
+  useEffect(() => {
+    setFormatCommand(`pattern:${backgroundPattern}`);
+  }, [backgroundPattern]);
 
   const containerStyle = useAnimatedStyle(() => ({
     height: interpolate(progress.value, [0, 1], [0, 60], Extrapolation.CLAMP),
@@ -159,7 +182,7 @@ export default function NoteScreen() {
     }
   }, [existingNote, isNew]);
 
-  const handleSaveAndGoBack = () => {
+  const handleSaveAndGoBack = (actionType?: string) => {
     if (title.trim() === '' && content.trim() === '') {
       router.back();
       return;
@@ -176,9 +199,13 @@ export default function NoteScreen() {
         font: selectedFont
       });
     } else {
-      updateNote(id as string, { title, content, color, backgroundPattern, pinned, tags: selectedTags, font: selectedFont });
+      setTimeout(() => {
+        updateNote(id as string, { title, content, color, backgroundPattern, pinned, tags: selectedTags, font: selectedFont });
+      }, 1000)
     }
+
     router.back();
+
   };
 
   const handleDelete = async () => {
@@ -240,7 +267,9 @@ export default function NoteScreen() {
       style={[styles.container, { backgroundColor: currentBgColor, paddingTop: insets.top }]}
     >
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleSaveAndGoBack} style={styles.iconButton}>
+        <TouchableOpacity onPress={() => {
+          handleSaveAndGoBack("backButton")
+        }} style={styles.iconButton}>
           <ArrowLeft color={iconColor} size={24} />
         </TouchableOpacity>
         <View style={styles.headerActions}>
@@ -303,8 +332,8 @@ export default function NoteScreen() {
                     },
                   ]}
                   onPress={() => {
-                 // setFormatCommand(`bg:${c === colors[0] ? '' : c)}`);
-                  setColor(c === colors[0] ? '' : c)    
+                    // setFormatCommand(`bg:${c === colors[0] ? '' : c)}`);
+                    setColor(c === colors[0] ? '' : c)
                   }
                   }
                 />
@@ -383,8 +412,6 @@ export default function NoteScreen() {
           onChange={setContent}
           sizes={editorSizes}
           textColor={themeColors.text}
-          //backgroundColor={currentBgColor}
-          backgroundPattern={activeBackgroundPattern}
           formatCommand={formatCommand}
           onBlockTypeChange={setActiveBlockType}
           onActiveFormatsChange={setActiveInlineFormats}
