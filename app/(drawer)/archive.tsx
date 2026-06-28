@@ -25,8 +25,10 @@ export default function ArchiveScreen() {
     loadNotes();
   }, [loadNotes]);
 
+  const notesArray = Object.values(notes).sort((a, b) => b.createdAt - a.createdAt);
+
   // Filter archived and non-trashed notes matching search query
-  const archivedNotes = notes.filter((n) => 
+  const archivedNotes = notesArray.filter((n) => 
     n.archived && 
     !n.trashed && 
     (n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

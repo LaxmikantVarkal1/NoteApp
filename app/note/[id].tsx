@@ -1,15 +1,17 @@
 import RichTextEditor from '@/components/RichTextEditor';
 import bgPatterns from '@/constants/bg';
-import { CustomFonts, Colors, Typography, NoteColors } from '@/constants/theme';
+import { Colors, CustomFonts, NoteColors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useNoteStore } from '@/store/useNoteStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Archive, ArrowLeft, CircleDashed, MoreVertical, Palette, Pin, Tag, Trash2 } from 'lucide-react-native';
+import { Archive, ArrowLeft, MoreVertical, Palette, Pin, Tag, Trash2 } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Keyboard, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Keyboard, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { Extrapolation, interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SvgXml } from 'react-native-svg';
 
 export default function NoteScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -24,8 +26,8 @@ export default function NoteScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  const { notes, addNote, updateNote, deleteNote, trashNote, archiveNote, unarchiveNote, togglePin, setSelectedTags, selectedTags } = useNoteStore();
-  const existingNote = notes.find(n => n.id === id);
+  const { notes, isLoading, loadNotes, addNote, updateNote, deleteNote, trashNote, archiveNote, unarchiveNote, togglePin, setSelectedTags, selectedTags } = useNoteStore();
+  const existingNote = id ? notes[id] : undefined;
   const [keyboardHeight, setKeyboardHeight] = useState(10);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -41,6 +43,30 @@ export default function NoteScreen() {
     bold: false, italic: false, underline: false, strikethrough: false,
   });
   const [showMenu, setShowMenu] = useState(false);
+
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    progress.value = withTiming(showPalette ? 1 : 0, {
+      duration: 300,
+    });
+  }, [showPalette]);
+
+  const containerStyle = useAnimatedStyle(() => ({
+    height: interpolate(progress.value, [0, 1], [0, 108], Extrapolation.CLAMP),
+    paddingVertical: interpolate(progress.value, [0, 1], [0, 12], Extrapolation.CLAMP),
+    borderBottomWidth: interpolate(progress.value, [0, 1], [0, StyleSheet.hairlineWidth], Extrapolation.CLAMP),
+    overflow: "hidden",
+  }));
+
+  const contentStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [
+      {
+        translateY: interpolate(progress.value, [0, 1], [-12, 0]),
+      },
+    ],
+  }));
 
   useEffect(() => {
     const showSub = Keyboard.addListener(
@@ -62,6 +88,10 @@ export default function NoteScreen() {
       hideSub.remove();
     };
   }, []);
+
+  useEffect(() => {
+    loadNotes();
+  }, [loadNotes]);
 
   const sendFormat = (cmd: string) => {
     setFormatCommand(`${cmd}:${Date.now()}`);
@@ -184,8 +214,14 @@ export default function NoteScreen() {
   const menuIconColor = themeColors.menuIcon;
   const deleteColor = themeColors.deleteColor;
 
-
-
+  if (isLoading) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: themeColors.background }]}>
+        <ActivityIndicator size="large" color={themeColors.tomatoRed} />
+        <Text style={[styles.loadingText, { color: themeColors.subtitle }]}>Loading note...</Text>
+      </View>
+    );
+  }
 
   return (
 
@@ -220,26 +256,80 @@ export default function NoteScreen() {
         </View>
       </View>
 
-      {showPalette && (
-        <View style={styles.paletteContainer}>
-          <GestureDetector gesture={patternDoubleTap}>
-            <TouchableOpacity
-              onPress={() => {
+      <Animated.View
+        style={[
+          styles.paletteContainer,
+          containerStyle,
+          { borderBottomColor: themeColors.border },
+        ]}
+      >
+        <Animated.View style={contentStyle}>
 
-              }}
-              style={styles.patternButton}>
-              <CircleDashed color={backgroundPattern ? isActiveAction : iconColor} size={36} />
-            </TouchableOpacity>
-          </GestureDetector>
-          {colors.map((c) => (
-            <TouchableOpacity
-              key={c}
-              style={[styles.colorCircle, { backgroundColor: c, borderWidth: color === c || (c === colors[0] && !color) ? 2 : 0, borderColor: themeColors.text }]}
-              onPress={() => setColor(c === colors[0] ? '' : c)}
-            />
-          ))}
-        </View>
-      )}
+          {/* Colors selection */}
+          <View style={styles.paletteRow}>
+            <Text style={[styles.paletteLabel, { color: themeColors.subtitle }]}>Color</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.rowContent}
+            >
+              {colors.map((c) => (
+                <TouchableOpacity
+                  key={c}
+                  style={[
+                    styles.colorCircle,
+                    {
+                      backgroundColor: c,
+                      borderWidth: color === c || (c === colors[0] && !color) ? 2 : 0,
+                      borderColor: themeColors.text,
+                    },
+                  ]}
+                  onPress={() => setColor(c === colors[0] ? '' : c)}
+                />
+              ))}
+            </ScrollView>
+          </View>
+          {/* Patterns selection */}
+          <View style={[styles.paletteRow, { marginTop: 12 }]}>
+            <Text style={[styles.paletteLabel, { color: themeColors.subtitle }]}>Pattern</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.rowContent}
+            >
+              {bgPatterns.map((p) => {
+                const isSelected = backgroundPattern === p.id || (p.id === 'none' && !backgroundPattern);
+                return (
+                  <TouchableOpacity
+                    key={p.id}
+                    style={[
+                      styles.patternCircle,
+                      {
+                        borderWidth: isSelected ? 2 : 1,
+                        borderColor: isSelected ? themeColors.text : themeColors.border,
+                        backgroundColor: themeColors.cardBackground,
+                      },
+                    ]}
+                    onPress={() => setBackgroundPattern(p.id === 'none' ? '' : p.id)}
+                  >
+                    <View style={styles.patternCircleInner}>
+                      {p.svg ? (
+                        <SvgXml xml={p.svg} width="100%" height="100%" />
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </Animated.View>
+
+
+      </Animated.View>
+
+
+
+
 
 
       <View style={{ flexDirection: 'row', paddingHorizontal: 16 }}>
@@ -302,15 +392,15 @@ export default function NoteScreen() {
       </View> */}
 
       {
-        showFormatBar && <View style={{
+        showFormatBar && <View style={[{
           position: "absolute",
           bottom: keyboardHeight,
           flexDirection: 'row',
           width: '100%',
           zIndex: 999,
-          padding: 10,
-          backgroundColor: themeColors.formatBarBg
-        }}>
+          padding: 15,
+          backgroundColor: currentBgColor,
+        }]}>
           {isOnline && <GestureDetector gesture={gesture}>
             <TouchableOpacity
               style={{ height: 'auto', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }}>
@@ -400,8 +490,8 @@ export default function NoteScreen() {
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => {
-                setShowMenu(false);
                 handleDelete();
+                setShowMenu(false);
               }}
             >
               <Trash2 color={deleteColor} size={18} />
@@ -421,6 +511,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    fontFamily: Typography.medium,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -435,9 +535,21 @@ const styles = StyleSheet.create({
     marginEnd: 10
   },
   paletteContainer: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+  },
+  paletteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  paletteLabel: {
+    fontSize: 12,
+    fontFamily: Typography.medium,
+    width: 60,
+  },
+  rowContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
   },
   colorCircle: {
@@ -445,11 +557,17 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
   },
-  patternButton: {
+  patternCircle: {
     width: 36,
     height: 36,
-    alignItems: 'center',
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  patternCircleInner: {
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   contentContainer: {
     flex: 1,
@@ -548,5 +666,22 @@ const styles = StyleSheet.create({
   menuSeparator: {
     height: 1,
     marginVertical: 4,
+  },
+  topShadow: {
+    position: "absolute",
+    top: -8,
+    left: 0,
+    right: 0,
+    height: 8,
+    backgroundColor: "#fff",
+
+    // iOS
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+
+    // Android
+    elevation: 8,
   },
 });

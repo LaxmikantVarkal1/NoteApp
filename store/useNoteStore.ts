@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { loadNotesFromFS, loadSettingsFromFS, loadTagsFromFS, Note, saveNotesToFS, saveSettingsToFS, saveTagsToFS, SettingsData } from './fs';
 
 interface NoteState {
-  notes: Note[];
+  notes: Record<string, Note>;
   tags: string[];
   selectedTags: string[];
   settings: SettingsData;
@@ -38,7 +38,7 @@ interface selectedTagsState {
 }
 
 export const useNoteStore = create<NoteState>((set, get) => ({
-  notes: [],
+  notes: {},
   tags: [],
   selectedTags: [],
   settings: { trashAutoDeleteDays: 30 },
@@ -49,61 +49,91 @@ export const useNoteStore = create<NoteState>((set, get) => ({
 
   loadNotes: async () => {
     set({ isLoading: true });
-    const notes = await loadNotesFromFS();
+    const notesArray = await loadNotesFromFS();
     const tags = await loadTagsFromFS();
     const settings = await loadSettingsFromFS();
+
+    const notesRecord: Record<string, Note> = {};
+    notesArray.forEach((n) => {
+      notesRecord[n.id] = n;
+    });
 
     // Auto-delete trash cleanup
     const now = Date.now();
     const retentionPeriod = settings.trashAutoDeleteDays * 24 * 60 * 60 * 1000;
 
-    let cleanNotes = notes;
-    if (settings.trashAutoDeleteDays > 0) {
-      cleanNotes = notes.filter((n) => {
+    const cleanNotesRecord: Record<string, Note> = {};
+    let hasChanges = false;
+    Object.values(notesRecord).forEach((n) => {
+      if (settings.trashAutoDeleteDays > 0) {
         if (n.trashed && n.deletedAt) {
-          return now - n.deletedAt < retentionPeriod;
+          if (now - n.deletedAt >= retentionPeriod) {
+            hasChanges = true;
+            return;
+          }
         }
-        return true;
-      });
-    } else if (settings.trashAutoDeleteDays === 0) {
-      // 0 means delete immediately (which would delete all trashed notes upon reload)
-      cleanNotes = notes.filter((n) => !n.trashed);
-    }
+      } else if (settings.trashAutoDeleteDays === 0) {
+        if (n.trashed) {
+          hasChanges = true;
+          return;
+        }
+      }
+      cleanNotesRecord[n.id] = n;
+    });
 
-    set({ notes: cleanNotes, tags, settings, isLoading: false });
-    if (cleanNotes.length !== notes.length) {
-      await saveNotesToFS(cleanNotes);
+    set({ notes: cleanNotesRecord, tags, settings, isLoading: false });
+    if (hasChanges) {
+      await saveNotesToFS(Object.values(cleanNotesRecord));
     }
   },
   addNote: async (note) => {
+    const newId = uuidv4();
     const newNote: Note = {
       ...note,
-      id: uuidv4(),
+      id: newId,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
-    const updatedNotes = [newNote, ...get().notes];
+    const updatedNotes = {
+      [newId]: newNote,
+      ...get().notes,
+    };
     set({ notes: updatedNotes });
-    await saveNotesToFS(updatedNotes);
+    await saveNotesToFS(Object.values(updatedNotes));
   },
   updateNote: async (id, updatedFields) => {
-    const updatedNotes = get().notes.map((n) =>
-      n.id === id ? { ...n, ...updatedFields, updatedAt: Date.now() } : n
-    );
+    const currentNotes = get().notes;
+    if (!currentNotes[id]) return;
+    const updatedNotes = {
+      ...currentNotes,
+      [id]: {
+        ...currentNotes[id],
+        ...updatedFields,
+        updatedAt: Date.now(),
+      },
+    };
     set({ notes: updatedNotes });
-    await saveNotesToFS(updatedNotes);
+    await saveNotesToFS(Object.values(updatedNotes));
   },
   deleteNote: async (id) => {
-    const updatedNotes = get().notes.filter((n) => n.id !== id);
+    const updatedNotes = { ...get().notes };
+    delete updatedNotes[id];
     set({ notes: updatedNotes });
-    await saveNotesToFS(updatedNotes);
+    await saveNotesToFS(Object.values(updatedNotes));
   },
   togglePin: async (id) => {
-    const updatedNotes = get().notes.map((n) =>
-      n.id === id ? { ...n, pinned: !n.pinned, updatedAt: Date.now() } : n
-    );
+    const currentNotes = get().notes;
+    if (!currentNotes[id]) return;
+    const updatedNotes = {
+      ...currentNotes,
+      [id]: {
+        ...currentNotes[id],
+        pinned: !currentNotes[id].pinned,
+        updatedAt: Date.now(),
+      },
+    };
     set({ notes: updatedNotes });
-    await saveNotesToFS(updatedNotes);
+    await saveNotesToFS(Object.values(updatedNotes));
   },
 
   // tag functions
@@ -116,19 +146,24 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   },
   deleteTag: async (tagToDelete) => {
     const updatedTags = get().tags.filter((t) => t !== tagToDelete);
-    const updatedNotes = get().notes.map((note) => {
+    const updatedNotes = { ...get().notes };
+    let hasChanges = false;
+    Object.keys(updatedNotes).forEach((id) => {
+      const note = updatedNotes[id];
       if (note.tags?.includes(tagToDelete)) {
-        return {
+        hasChanges = true;
+        updatedNotes[id] = {
           ...note,
           tags: note.tags.filter((t) => t !== tagToDelete),
           updatedAt: Date.now(),
         };
       }
-      return note;
     });
     set({ tags: updatedTags, notes: updatedNotes });
     await saveTagsToFS(updatedTags);
-    await saveNotesToFS(updatedNotes);
+    if (hasChanges) {
+      await saveNotesToFS(Object.values(updatedNotes));
+    }
   },
   updateTag: async (oldTag, newTag) => {
     const cleanNewTag = newTag.trim();
@@ -136,20 +171,25 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     let updatedTags = get().tags.map((t) => (t === oldTag ? cleanNewTag : t));
     updatedTags = Array.from(new Set(updatedTags));
 
-    const updatedNotes = get().notes.map((note) => {
+    const updatedNotes = { ...get().notes };
+    let hasChanges = false;
+    Object.keys(updatedNotes).forEach((id) => {
+      const note = updatedNotes[id];
       if (note.tags?.includes(oldTag)) {
+        hasChanges = true;
         const withNewTag = note.tags.map((t) => (t === oldTag ? cleanNewTag : t));
-        return {
+        updatedNotes[id] = {
           ...note,
           tags: Array.from(new Set(withNewTag)),
           updatedAt: Date.now(),
         };
       }
-      return note;
     });
     set({ tags: updatedTags, notes: updatedNotes });
     await saveTagsToFS(updatedTags);
-    await saveNotesToFS(updatedNotes);
+    if (hasChanges) {
+      await saveNotesToFS(Object.values(updatedNotes));
+    }
   },
   setSelectedTags: (tag: string) => {
     set((state) => ({
@@ -159,49 +199,93 @@ export const useNoteStore = create<NoteState>((set, get) => ({
 
   //  note functions
   archiveNote: async (id) => {
-    const updatedNotes = get().notes.map((n) =>
-      n.id === id ? { ...n, archived: true, pinned: false, trashed: false, updatedAt: Date.now() } : n
-    );
+    const currentNotes = get().notes;
+    if (!currentNotes[id]) return;
+    const updatedNotes = {
+      ...currentNotes,
+      [id]: {
+        ...currentNotes[id],
+        archived: true,
+        pinned: false,
+        trashed: false,
+        updatedAt: Date.now(),
+      },
+    };
     set({ notes: updatedNotes });
-    await saveNotesToFS(updatedNotes);
+    await saveNotesToFS(Object.values(updatedNotes));
   },
   unarchiveNote: async (id) => {
-    const updatedNotes = get().notes.map((n) =>
-      n.id === id ? { ...n, archived: false, updatedAt: Date.now() } : n
-    );
+    const currentNotes = get().notes;
+    if (!currentNotes[id]) return;
+    const updatedNotes = {
+      ...currentNotes,
+      [id]: {
+        ...currentNotes[id],
+        archived: false,
+        updatedAt: Date.now(),
+      },
+    };
     set({ notes: updatedNotes });
-    await saveNotesToFS(updatedNotes);
+    await saveNotesToFS(Object.values(updatedNotes));
   },
   trashNote: async (id) => {
-    // If settings are set to immediate auto-delete (trashAutoDeleteDays === 0), delete permanently right away
     if (get().settings.trashAutoDeleteDays === 0) {
-      const updatedNotes = get().notes.filter((n) => n.id !== id);
+      const updatedNotes = { ...get().notes };
+      delete updatedNotes[id];
       set({ notes: updatedNotes });
-      await saveNotesToFS(updatedNotes);
+      await saveNotesToFS(Object.values(updatedNotes));
       return;
     }
-    const updatedNotes = get().notes.map((n) =>
-      n.id === id ? { ...n, trashed: true, deletedAt: Date.now(), pinned: false, archived: false, updatedAt: Date.now() } : n
-    );
+    const currentNotes = get().notes;
+    if (!currentNotes[id]) return;
+    const updatedNotes = {
+      ...currentNotes,
+      [id]: {
+        ...currentNotes[id],
+        trashed: true,
+        deletedAt: Date.now(),
+        pinned: false,
+        archived: false,
+        updatedAt: Date.now(),
+      },
+    };
     set({ notes: updatedNotes });
-    await saveNotesToFS(updatedNotes);
+    await saveNotesToFS(Object.values(updatedNotes));
   },
   restoreNote: async (id) => {
-    const updatedNotes = get().notes.map((n) =>
-      n.id === id ? { ...n, trashed: false, deletedAt: undefined, updatedAt: Date.now() } : n
-    );
+    const currentNotes = get().notes;
+    if (!currentNotes[id]) return;
+    const updatedNotes = {
+      ...currentNotes,
+      [id]: {
+        ...currentNotes[id],
+        trashed: false,
+        deletedAt: undefined,
+        updatedAt: Date.now(),
+      },
+    };
     set({ notes: updatedNotes });
-    await saveNotesToFS(updatedNotes);
+    await saveNotesToFS(Object.values(updatedNotes));
   },
   deleteNotePermanently: async (id) => {
-    const updatedNotes = get().notes.filter((n) => n.id !== id);
+    const updatedNotes = { ...get().notes };
+    delete updatedNotes[id];
     set({ notes: updatedNotes });
-    await saveNotesToFS(updatedNotes);
+    await saveNotesToFS(Object.values(updatedNotes));
   },
   emptyTrash: async () => {
-    const updatedNotes = get().notes.filter((n) => !n.trashed);
-    set({ notes: updatedNotes });
-    await saveNotesToFS(updatedNotes);
+    const updatedNotes = { ...get().notes };
+    let hasChanges = false;
+    Object.keys(updatedNotes).forEach((id) => {
+      if (updatedNotes[id].trashed) {
+        hasChanges = true;
+        delete updatedNotes[id];
+      }
+    });
+    if (hasChanges) {
+      set({ notes: updatedNotes });
+      await saveNotesToFS(Object.values(updatedNotes));
+    }
   },
   setTrashAutoDeleteDays: async (days) => {
     const newSettings = { trashAutoDeleteDays: days };
@@ -209,7 +293,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     await saveSettingsToFS(newSettings);
   },
   clearAllData: async () => {
-    set({ notes: [], tags: [] });
+    set({ notes: {}, tags: [] });
     await saveNotesToFS([]);
     await saveTagsToFS([]);
   },

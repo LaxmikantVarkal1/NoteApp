@@ -24,7 +24,9 @@ export default function TrashScreen() {
     loadNotes();
   }, [loadNotes]);
 
-  const trashedNotes = notes.filter((n) => n.trashed);
+  const notesArray = Object.values(notes).sort((a, b) => b.createdAt - a.createdAt);
+
+  const trashedNotes = notesArray.filter((n) => n.trashed);
 
   const handleEmptyTrash = () => {
     if (trashedNotes.length === 0) return;

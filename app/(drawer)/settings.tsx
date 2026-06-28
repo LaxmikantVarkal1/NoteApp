@@ -21,11 +21,12 @@ export default function SettingsScreen() {
   }, [loadNotes]);
 
   // Statistics
-  const totalNotes = notes.length;
-  const activeNotes = notes.filter(n => !n.archived && !n.trashed).length;
-  const archivedNotes = notes.filter(n => n.archived && !n.trashed).length;
-  const trashedNotes = notes.filter(n => n.trashed).length;
-  const pinnedNotes = notes.filter(n => n.pinned && !n.archived && !n.trashed).length;
+  const notesArray = Object.values(notes);
+  const totalNotes = notesArray.length;
+  const activeNotes = notesArray.filter(n => !n.archived && !n.trashed).length;
+  const archivedNotes = notesArray.filter(n => n.archived && !n.trashed).length;
+  const trashedNotes = notesArray.filter(n => n.trashed).length;
+  const pinnedNotes = notesArray.filter(n => n.pinned && !n.archived && !n.trashed).length;
 
   const handleClearAll = () => {
     Alert.alert(

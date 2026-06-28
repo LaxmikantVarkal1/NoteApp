@@ -1,3 +1,4 @@
+import { Colors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNoteStore } from '@/store/useNoteStore';
 import { DrawerActions } from '@react-navigation/native';
@@ -7,7 +8,6 @@ import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, Typography } from '@/constants/theme';
 
 export default function NotesScreen() {
   const insets = useSafeAreaInsets();
@@ -24,7 +24,9 @@ export default function NotesScreen() {
     loadNotes();
   }, [loadNotes]);
 
-  const filteredNotes = notes.filter((n) => {
+  const notesArray = Object.values(notes).sort((a, b) => b.createdAt - a.createdAt);
+
+  const filteredNotes = notesArray.filter((n) => {
     const matchesSearch =
       n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       n.content.toLowerCase().includes(searchQuery.toLowerCase());
@@ -115,7 +117,7 @@ export default function NotesScreen() {
       )}
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {notes.length === 0 ? (
+        {notesArray.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={[styles.emptyTitle, { color: themeColors.text }]}>Keep your thoughts organized</Text>
             <Text style={[styles.emptySub, { color: themeColors.subtitle }]}>Notes you add appear here</Text>
@@ -162,6 +164,8 @@ function NoteCard({ note, index }: { note: any; index: number }) {
   const themeColors = isDark ? Colors.dark : Colors.light;
   const bgColor = note.color || themeColors.cardBackground;
   const plainTextContent = stripHtml(note.content);
+
+  if (note.trashed) return null;
 
   return (
     <Animated.View entering={FadeInUp.delay(index * 100).springify()}>
