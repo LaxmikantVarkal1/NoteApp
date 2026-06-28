@@ -155,6 +155,61 @@ function convertChecklistToParagraph(checklistNode: HTMLElement) {
   }
 }
 
+function getCleanHTML(editorEl: HTMLElement | null): string {
+  if (!editorEl) return '';
+  const clone = editorEl.cloneNode(true) as HTMLElement;
+  clone.querySelectorAll('.checklist-delete-btn').forEach((btn) => btn.remove());
+  clone.querySelectorAll('.checklist-add-row').forEach((row) => row.remove());
+  return clone.innerHTML;
+}
+
+function insertAddRowAfter(targetItem: HTMLElement) {
+  const addRow = document.createElement('div');
+  addRow.className = 'checklist-add-row';
+  addRow.setAttribute('contenteditable', 'false');
+  addRow.innerHTML = `
+    <span class="plus-icon">+</span>
+    <span class="placeholder-text">List item</span>
+  `;
+  targetItem.parentNode!.insertBefore(addRow, targetItem.nextSibling);
+}
+
+function enhanceChecklists(editorEl: HTMLElement) {
+  // 1. Ensure all checklist items have a delete button
+  const items = editorEl.querySelectorAll('.checklist-item');
+  items.forEach((item) => {
+    if (!item.querySelector('.checklist-delete-btn')) {
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'checklist-delete-btn';
+      deleteBtn.innerHTML = '×';
+      deleteBtn.setAttribute('contenteditable', 'false');
+      item.appendChild(deleteBtn);
+    }
+  });
+
+  // 2. Remove all existing add-item rows first to recalculate groups cleanly
+  editorEl.querySelectorAll('.checklist-add-row').forEach((row) => row.remove());
+
+  // 3. Find groups of adjacent checklist items and insert a checklist-add-row after each group
+  let currentGroup: HTMLElement[] = [];
+  const children = Array.from(editorEl.children) as HTMLElement[];
+
+  children.forEach((child) => {
+    if (child.classList.contains('checklist-item')) {
+      currentGroup.push(child);
+    } else {
+      if (currentGroup.length > 0) {
+        insertAddRowAfter(currentGroup[currentGroup.length - 1]);
+        currentGroup = [];
+      }
+    }
+  });
+
+  if (currentGroup.length > 0) {
+    insertAddRowAfter(currentGroup[currentGroup.length - 1]);
+  }
+}
+
 function getCurrentBlockType(editorEl: HTMLElement): BlockType {
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) return 'paragraph';
@@ -353,6 +408,13 @@ export default function RichTextEditor({
     return sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
   }, []);
 
+  const handleContentChange = useCallback(() => {
+    if (editorRef.current) {
+      enhanceChecklists(editorRef.current);
+      onChange(getCleanHTML(editorRef.current));
+    }
+  }, [onChange]);
+
   const isDark = backgroundColor === '#000' || backgroundColor === '#1a1a2e' || backgroundColor === '#111' || backgroundColor === '#222';
   const tc = textColor;
   const bg = backgroundColor;
@@ -365,6 +427,7 @@ export default function RichTextEditor({
   useEffect(() => {
     if (editorRef.current && !isInitialized.current) {
       editorRef.current.innerHTML = initialContent || '<p><br></p>';
+      enhanceChecklists(editorRef.current);
       isInitialized.current = true;
       setLoading(false);
     }
@@ -467,9 +530,7 @@ export default function RichTextEditor({
         }
       }
 
-      if (editorRef.current) {
-        onChange(editorRef.current.innerHTML);
-      }
+      handleContentChange();
       return;
     }
 
@@ -487,10 +548,8 @@ export default function RichTextEditor({
 
     updateFormats();
 
-    if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
-    }
-  }, [formatCommand, onChange, updateFormats]);
+    handleContentChange();
+  }, [formatCommand, handleContentChange, updateFormats]);
 
   // ─── Input handler (Markdown Shortcuts) ───────────────────────────────────
   const handleEditorInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
@@ -534,8 +593,8 @@ export default function RichTextEditor({
       }
     }
 
-    onChange(el.innerHTML);
-  }, [onChange]);
+    handleContentChange();
+  }, [handleContentChange]);
 
   // ─── KeyDown events ────────────────────────────────────────────────────────
   const handleEditorKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -551,14 +610,13 @@ export default function RichTextEditor({
         : node.parentElement?.closest('.checklist-item');
 
       if (checklistItem) {
-        const text = checklistItem.textContent?.trim() || '';
+        const textSpan = checklistItem.querySelector('.checklist-text');
+        const text = textSpan?.textContent?.trim() || '';
         if (!text) {
           // Revert empty checklist item to normal paragraph on enter
           e.preventDefault();
           convertChecklistToParagraph(checklistItem as HTMLElement);
-          if (editorRef.current) {
-            onChange(editorRef.current.innerHTML);
-          }
+          handleContentChange();
           return;
         }
 
@@ -580,15 +638,16 @@ export default function RichTextEditor({
             }
             newChecklistItem.classList.remove('checked');
 
+            // Remove any cloned delete button from the new item (enhanceChecklists will re-add it)
+            newChecklistItem.querySelectorAll('.checklist-delete-btn').forEach((btn) => btn.remove());
+
             // Clear any text if browser cloned it into checklist-text
-            const textSpan = newChecklistItem.querySelector('.checklist-text');
-            if (textSpan && textSpan !== newNode && !textSpan.contains(newNode)) {
-              textSpan.innerHTML = '<br>';
+            const newTextSpan = newChecklistItem.querySelector('.checklist-text');
+            if (newTextSpan && newTextSpan !== newNode && !newTextSpan.contains(newNode)) {
+              newTextSpan.innerHTML = '<br>';
             }
 
-            if (editorRef.current) {
-              onChange(editorRef.current.innerHTML);
-            }
+            handleContentChange();
           }
         }, 10);
       }
@@ -627,9 +686,7 @@ export default function RichTextEditor({
         if (el.classList.contains('checklist-item')) {
           e.preventDefault();
           convertChecklistToParagraph(el);
-          if (editorRef.current) {
-            onChange(editorRef.current.innerHTML);
-          }
+          handleContentChange();
           return;
         }
 
@@ -637,18 +694,18 @@ export default function RichTextEditor({
         if (['H1', 'H2', 'H3', 'BLOCKQUOTE', 'PRE'].includes(tagName)) {
           e.preventDefault();
           document.execCommand('formatBlock', false, 'P');
-          if (editorRef.current) {
-            onChange(editorRef.current.innerHTML);
-          }
+          handleContentChange();
           return;
         }
       }
     }
-  }, [onChange]);
+  }, [handleContentChange]);
 
-  // ─── Click handler (Checkbox Toggles) ──────────────────────────────────────
+  // ─── Click handler (Checkbox Toggles, Delete, Add Row) ─────────────────────
   const handleEditorClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
+
+    // 1. Checkbox toggle
     if (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'checkbox') {
       const checkbox = target as HTMLInputElement;
       const checklistItem = checkbox.closest('.checklist-item');
@@ -660,12 +717,59 @@ export default function RichTextEditor({
           checkbox.removeAttribute('checked');
           checklistItem.classList.remove('checked');
         }
-        if (editorRef.current) {
-          onChange(editorRef.current.innerHTML);
-        }
+        handleContentChange();
       }
+      return;
     }
-  }, [onChange]);
+
+    // 2. Delete button click
+    if (target.classList.contains('checklist-delete-btn') || target.closest('.checklist-delete-btn')) {
+      const btn = target.classList.contains('checklist-delete-btn') ? target : target.closest('.checklist-delete-btn')!;
+      const checklistItem = btn.closest('.checklist-item');
+      if (checklistItem) {
+        checklistItem.remove();
+        handleContentChange();
+      }
+      return;
+    }
+
+    // 3. "+ List item" add-row click
+    if (target.classList.contains('checklist-add-row') || target.closest('.checklist-add-row')) {
+      const addRow = target.classList.contains('checklist-add-row') ? target : target.closest('.checklist-add-row')!;
+      const editorEl = editorRef.current;
+      if (!editorEl) return;
+
+      // Create a new checklist item
+      const newItem = document.createElement('div');
+      newItem.className = 'checklist-item';
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.setAttribute('contenteditable', 'false');
+      newItem.appendChild(checkbox);
+
+      const textSpan = document.createElement('span');
+      textSpan.className = 'checklist-text';
+      textSpan.innerHTML = '<br>';
+      newItem.appendChild(textSpan);
+
+      // Insert before the add-row
+      addRow.parentNode!.insertBefore(newItem, addRow);
+
+      // Focus the new item
+      const sel = window.getSelection();
+      if (sel) {
+        const range = document.createRange();
+        range.selectNodeContents(textSpan);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+
+      handleContentChange();
+      return;
+    }
+  }, [handleContentChange]);
 
 
 
@@ -830,8 +934,29 @@ export default function RichTextEditor({
           align-items: flex-start;
           gap: 8px;
           width: 100%;
-          padding: 3px 0;
-          min-height: 26px;
+          padding: 4px 0;
+          min-height: 32px;
+          position: relative;
+          padding-left: 24px;
+          padding-right: 28px;
+        }
+        /* Drag handle dots – visible on hover */
+        .checklist-item::before {
+          content: '⠿';
+          position: absolute;
+          left: 0;
+          top: 50%;
+          transform: translateY(-50%);
+          font-size: 16px;
+          color: ${tc}30;
+          cursor: grab;
+          opacity: 0;
+          transition: opacity 0.15s ease;
+          user-select: none;
+          pointer-events: none;
+        }
+        .checklist-item:hover::before {
+          opacity: 1;
         }
         .checklist-item input[type="checkbox"] {
           flex-shrink: 0;
@@ -845,10 +970,63 @@ export default function RichTextEditor({
         .checklist-text {
           flex: 1;
           outline: none;
+          min-height: 1.4em;
         }
         .checklist-item.checked .checklist-text {
           text-decoration: line-through;
           opacity: 0.48;
+        }
+
+        /* Delete button (×) */
+        .checklist-delete-btn {
+          position: absolute;
+          right: 0;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          font-size: 20px;
+          line-height: 1;
+          color: ${tc}40;
+          cursor: pointer;
+          opacity: 0;
+          transition: opacity 0.15s ease, color 0.15s ease;
+          padding: 2px 4px;
+          user-select: none;
+        }
+        .checklist-item:hover .checklist-delete-btn {
+          opacity: 1;
+        }
+        .checklist-delete-btn:hover {
+          color: ${isLight ? '#E53935' : '#EF5350'};
+        }
+
+        /* "+ List item" add row */
+        .checklist-add-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 0;
+          padding-left: 24px;
+          cursor: pointer;
+          user-select: none;
+          margin-left: 26px;
+        }
+        .checklist-add-row .plus-icon {
+          font-size: 18px;
+          color: ${tc}40;
+          transition: color 0.15s ease;
+          width: 18px;
+          text-align: center;
+        }
+        .checklist-add-row .placeholder-text {
+          font-size: 15px;
+          color: ${tc}40;
+          transition: color 0.15s ease;
+        }
+        .checklist-add-row:hover .plus-icon,
+        .checklist-add-row:hover .placeholder-text {
+          color: ${tc}80;
         }
 
         ::selection { background: ${accentColor}40; }

@@ -5,7 +5,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useNoteStore } from '@/store/useNoteStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Archive, ArrowLeft, MoreVertical, Palette, Pin, Tag, Trash2 } from 'lucide-react-native';
+import { Archive, ArrowLeft, CheckSquare, MoreVertical, Palette, Pin, Tag, Trash2 } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Keyboard, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -450,6 +450,14 @@ export default function NoteScreen() {
                   <Text style={[styles.fmtBtnText, style, { color: isActive ? isActiveAction : iconColor }]}>{label}</Text>
                 </TouchableOpacity>
               ))}
+
+              <View style={styles.fmtSep} />
+              <TouchableOpacity
+                onPress={() => sendBlockType('checklist')}
+                style={[styles.fmtBtn]}
+              >
+                <CheckSquare color={activeBlockType === 'checklist' ? isActiveAction : iconColor} size={18} />
+              </TouchableOpacity>
             </View>
           </ScrollView>
         </View>
