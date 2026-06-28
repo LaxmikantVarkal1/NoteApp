@@ -181,7 +181,20 @@ function enhanceChecklists(editorEl: HTMLElement) {
     if (!item.querySelector('.checklist-delete-btn')) {
       const deleteBtn = document.createElement('button');
       deleteBtn.className = 'checklist-delete-btn';
-      deleteBtn.innerHTML = '×';
+      deleteBtn.innerHTML = `
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="16"
+     height="16"
+     viewBox="0 0 24 24"
+     fill="none"
+     stroke="currentColor"
+     stroke-width="2"
+     stroke-linecap="round"
+     stroke-linejoin="round">
+  <path d="M18 6 6 18"/>
+  <path d="m6 6 12 12"/>
+</svg>
+`;
       deleteBtn.setAttribute('contenteditable', 'false');
       item.appendChild(deleteBtn);
     }
@@ -421,7 +434,7 @@ export default function RichTextEditor({
   const patternBg = svgToBackgroundImage(backgroundPattern);
   const isLight = !isDark;
   const borderColor = isLight ? '#0000002e' : '#fffdfd1d';
-  const accentColor = '#6c63ff';
+  const accentColor = '#edecf31e';
 
   // ─── Initialize Editor Content ─────────────────────────────────────────────
   useEffect(() => {
@@ -605,51 +618,30 @@ export default function RichTextEditor({
     // ── Handle Enter Key ──
     if (e.key === 'Enter') {
       const node = range.startContainer;
-      const checklistItem = node.nodeType === Node.ELEMENT_NODE
-        ? (node as HTMLElement).closest('.checklist-item')
-        : node.parentElement?.closest('.checklist-item');
+      const checklistItem =
+        node.nodeType === Node.ELEMENT_NODE
+          ? (node as HTMLElement).closest('.checklist-item')
+          : node.parentElement?.closest('.checklist-item');
 
       if (checklistItem) {
-        const textSpan = checklistItem.querySelector('.checklist-text');
-        const text = textSpan?.textContent?.trim() || '';
-        if (!text) {
-          // Revert empty checklist item to normal paragraph on enter
-          e.preventDefault();
-          convertChecklistToParagraph(checklistItem as HTMLElement);
-          handleContentChange();
-          return;
-        }
+        e.preventDefault();
 
-        // Duplicate checklist item but keep the new item unchecked
-        setTimeout(() => {
-          const sel = window.getSelection();
-          if (!sel || sel.rangeCount === 0) return;
-          const newRange = sel.getRangeAt(0);
-          const newNode = newRange.startContainer;
-          const newChecklistItem = newNode.nodeType === Node.ELEMENT_NODE
-            ? (newNode as HTMLElement).closest('.checklist-item')
-            : newNode.parentElement?.closest('.checklist-item');
+        const p = document.createElement('p');
+        p.innerHTML = '<br>';
 
-          if (newChecklistItem) {
-            const checkbox = newChecklistItem.querySelector('input[type="checkbox"]') as HTMLInputElement;
-            if (checkbox) {
-              checkbox.checked = false;
-              checkbox.removeAttribute('checked');
-            }
-            newChecklistItem.classList.remove('checked');
+        checklistItem.parentNode?.insertBefore(p, checklistItem.nextSibling);
 
-            // Remove any cloned delete button from the new item (enhanceChecklists will re-add it)
-            newChecklistItem.querySelectorAll('.checklist-delete-btn').forEach((btn) => btn.remove());
+        // Move cursor into the new paragraph
+        const newRange = document.createRange();
+        newRange.selectNodeContents(p);
+        newRange.collapse(true);
 
-            // Clear any text if browser cloned it into checklist-text
-            const newTextSpan = newChecklistItem.querySelector('.checklist-text');
-            if (newTextSpan && newTextSpan !== newNode && !newTextSpan.contains(newNode)) {
-              newTextSpan.innerHTML = '<br>';
-            }
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(newRange);
 
-            handleContentChange();
-          }
-        }, 10);
+        handleContentChange();
+        return;
       }
     }
 
@@ -934,39 +926,40 @@ export default function RichTextEditor({
           align-items: flex-start;
           gap: 8px;
           width: 100%;
-          padding: 4px 0;
           min-height: 32px;
           position: relative;
           padding-left: 24px;
           padding-right: 28px;
         }
         /* Drag handle dots – visible on hover */
-        .checklist-item::before {
-          content: '⠿';
-          position: absolute;
-          left: 0;
-          top: 50%;
-          transform: translateY(-50%);
-          font-size: 16px;
-          color: ${tc}30;
-          cursor: grab;
-          opacity: 0;
-          transition: opacity 0.15s ease;
-          user-select: none;
-          pointer-events: none;
-        }
-        .checklist-item:hover::before {
-          opacity: 1;
-        }
-        .checklist-item input[type="checkbox"] {
-          flex-shrink: 0;
-          width: 18px;
-          height: 18px;
-          border-radius: 5px;
-          margin-top: 4px;
-          cursor: pointer;
-          accent-color: ${accentColor};
-        }
+
+       .checklist-item input[type="checkbox"] {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 5px;
+  border: 2px solid ${accentColor};
+  border-radius: 5px;
+  cursor: pointer;
+
+  position: relative;
+}
+
+.checklist-item input[type="checkbox"]:checked {
+  background: ${accentColor};
+}
+
+.checklist-item input[type="checkbox"]:checked::before {
+  content: "✔";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: bold;
+}
         .checklist-text {
           flex: 1;
           outline: none;
@@ -996,9 +989,6 @@ export default function RichTextEditor({
         }
         .checklist-item:hover .checklist-delete-btn {
           opacity: 1;
-        }
-        .checklist-delete-btn:hover {
-          color: ${isLight ? '#E53935' : '#EF5350'};
         }
 
         /* "+ List item" add row */

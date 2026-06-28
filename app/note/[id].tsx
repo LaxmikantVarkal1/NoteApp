@@ -5,13 +5,12 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useNoteStore } from '@/store/useNoteStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Archive, ArrowLeft, CheckSquare, MoreVertical, Palette, Pin, Tag, Trash2 } from 'lucide-react-native';
+import { Archive, ArrowLeft, CheckSquare, CircleDashed, MoreVertical, Palette, Pin, Tag, Trash2 } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Keyboard, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { Extrapolation, interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SvgXml } from 'react-native-svg';
 
 export default function NoteScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -53,7 +52,7 @@ export default function NoteScreen() {
   }, [showPalette]);
 
   const containerStyle = useAnimatedStyle(() => ({
-    height: interpolate(progress.value, [0, 1], [0, 108], Extrapolation.CLAMP),
+    height: interpolate(progress.value, [0, 1], [0, 60], Extrapolation.CLAMP),
     paddingVertical: interpolate(progress.value, [0, 1], [0, 12], Extrapolation.CLAMP),
     borderBottomWidth: interpolate(progress.value, [0, 1], [0, StyleSheet.hairlineWidth], Extrapolation.CLAMP),
     overflow: "hidden",
@@ -214,6 +213,13 @@ export default function NoteScreen() {
   const menuIconColor = themeColors.menuIcon;
   const deleteColor = themeColors.deleteColor;
 
+  function makeThumbnail(svg: string) {
+    return svg
+      .replace('<svg', '<svg viewBox="0 0 100 100"')
+      .replace(/width="(\d+)"/g, (_, w) => `width="${Number(w) / 2}"`)
+      .replace(/height="(\d+)"/g, (_, h) => `height="${Number(h) / 2}"`);
+  }
+
   if (isLoading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: themeColors.background }]}>
@@ -239,6 +245,13 @@ export default function NoteScreen() {
           <TouchableOpacity onPress={togglePinStatus} style={styles.iconButton}>
             <Pin color={pinned ? isActiveAction : iconColor} size={24} />
           </TouchableOpacity>
+          <GestureDetector gesture={patternDoubleTap}>
+            <TouchableOpacity
+              style={styles.iconButton}>
+              <CircleDashed color={(backgroundPattern !== "none" && backgroundPattern) ? isActiveAction : iconColor} size={24} />
+              {backgroundPattern !== "none" && backgroundPattern && <Text style={{ color: isActiveAction, fontSize: 10, marginTop: 5, textAlign: 'center', fontFamily: Typography.medium }}>{backgroundPattern}</Text>}
+            </TouchableOpacity>
+          </GestureDetector>
           <TouchableOpacity onPress={() => {
             router.push('/note/modal/labels');
           }} style={styles.iconButton}>
@@ -260,7 +273,7 @@ export default function NoteScreen() {
         style={[
           styles.paletteContainer,
           containerStyle,
-          { borderBottomColor: themeColors.border },
+          { borderBottomColor: isDark ? '#0000001a' : '#ffffff95' },
         ]}
       >
         <Animated.View style={contentStyle}>
@@ -290,7 +303,7 @@ export default function NoteScreen() {
             </ScrollView>
           </View>
           {/* Patterns selection */}
-          <View style={[styles.paletteRow, { marginTop: 12 }]}>
+          {/* <View style={[styles.paletteRow, { marginTop: 12 }]}>
             <Text style={[styles.paletteLabel, { color: themeColors.subtitle }]}>Pattern</Text>
             <ScrollView
               horizontal
@@ -307,7 +320,6 @@ export default function NoteScreen() {
                       {
                         borderWidth: isSelected ? 2 : 1,
                         borderColor: isSelected ? themeColors.text : themeColors.border,
-                        backgroundColor: themeColors.cardBackground,
                       },
                     ]}
                     onPress={() => setBackgroundPattern(p.id === 'none' ? '' : p.id)}
@@ -321,7 +333,7 @@ export default function NoteScreen() {
                 );
               })}
             </ScrollView>
-          </View>
+          </View> */}
         </Animated.View>
 
 
@@ -332,7 +344,7 @@ export default function NoteScreen() {
 
 
 
-      <View style={{ flexDirection: 'row', paddingHorizontal: 16 }}>
+      <View style={{ flexDirection: 'row', paddingHorizontal: 16, marginTop: 4 }}>
         <TextInput
           style={[styles.titleInput, { color: themeColors.text, flex: 1 }]}
           placeholder="Title"
@@ -548,7 +560,7 @@ const styles = StyleSheet.create({
   },
   paletteRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   paletteLabel: {
     fontSize: 12,
@@ -566,9 +578,9 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   patternCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     overflow: 'hidden',
   },
   patternCircleInner: {

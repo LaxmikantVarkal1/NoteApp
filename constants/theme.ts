@@ -49,7 +49,7 @@ export const Colors = {
     subtitle: '#666666',
     background: '#FFFFFF',
     cardBackground: '#FFFFFF',
-    border: '#E0E0E0',
+    border: '#eeeeee17',
     borderLight: '#CCC',
     borderDark: '#555',
     itemBg: '#F9F9F9',
