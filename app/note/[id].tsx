@@ -4,10 +4,10 @@ import { Colors, CustomFonts, NoteColors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useNoteStore } from '@/store/useNoteStore';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { Archive, ArrowLeft, CheckSquare, CircleDashed, MoreVertical, Palette, Pin, Tag, Trash2 } from 'lucide-react-native';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, BackHandler, Keyboard, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { Archive, Check, CheckSquare, CircleDashed, MoreVertical, Palette, Pin, Tag, Trash2 } from 'lucide-react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Keyboard, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { Extrapolation, interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -42,34 +42,17 @@ export default function NoteScreen() {
     bold: false, italic: false, underline: false, strikethrough: false,
   });
   const [showMenu, setShowMenu] = useState(false);
+  const navigation = useNavigation()
 
   const progress = useSharedValue(0);
 
-  useFocusEffect(
-    useCallback(() => {
-      const subscription = BackHandler.addEventListener(
-        'hardwareBackPress',
-        () => {
-          handleSaveAndGoBack("manual");
-          return true;
-        }
-      );
-
-      return () => subscription.remove();
-    }, [title,
-      content,
-      color,
-      backgroundPattern,
-      pinned,
-      selectedTags,
-      selectedFont,])
-  );
 
   useEffect(() => {
     progress.value = withTiming(showPalette ? 1 : 0, {
       duration: 300,
     });
   }, [showPalette]);
+
 
   useEffect(() => {
     setFormatCommand(`bg:${currentBgColor}`);
@@ -270,7 +253,7 @@ export default function NoteScreen() {
         <TouchableOpacity onPress={() => {
           handleSaveAndGoBack("backButton")
         }} style={styles.iconButton}>
-          <ArrowLeft color={iconColor} size={24} />
+          <Check color={iconColor} size={24} />
         </TouchableOpacity>
         <View style={styles.headerActions}>
           {/* <TouchableOpacity onPress={() => setShowFormatBar(!showFormatBar)} style={[styles.iconButton]}>

@@ -170,7 +170,7 @@ function NoteCard({ note, index }: { note: any; index: number }) {
   return (
     <Animated.View entering={FadeInUp.delay(index * 100).springify()}>
       <TouchableOpacity
-        style={[styles.noteCard, { backgroundColor: bgColor, borderColor: isDark ? themeColors.border : themeColors.iconSubtle }]}
+        style={[styles.noteCard, { backgroundColor: bgColor }]}
         onPress={() => router.push(`/note/${note.id}`)}
       >
         <Text style={{ color: themeColors.iconSubtle, paddingBottom: 6, fontFamily: Typography.regular, textAlign: 'left', fontSize: 10 }}>{new Date(note.createdAt).toDateString()}</Text>
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: '#020000ff',
     shadowOpacity: 0.1,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
@@ -260,6 +260,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
+    borderColor: "#86828215",
     position: 'relative',
   },
   noteTitle: {

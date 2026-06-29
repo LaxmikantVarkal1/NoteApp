@@ -32,16 +32,24 @@ export const CustomFonts: Record<string, CustomFont> = {
 };
 
 export const Typography = {
-  light: 'Ubuntu-Light',
-  regular: 'Ubuntu-Regular',
-  medium: 'Ubuntu-Medium',
-  bold: 'Ubuntu-Bold',
+  light: 'GoogleSans-Regular',
+  regular: 'GoogleSans-Regular',
+  medium: 'GoogleSans-Medium',
+  bold: 'GoogleSans-Bold',
+  semiBold: 'GoogleSans-SemiBold',
+  italic: 'GoogleSans-Italic',
 };
 
 export const NoteColors = {
   light: ['#FFFFFF', '#FFD1CA', '#CFF1D7', '#D0E6F9', '#FFF3B8'],
   dark: ['#111111', '#4A1D1A', '#1C3322', '#1B2C3B', '#3B3A1C'],
 };
+// let color = rgb(122, 218, 165)
+let primary = ' rgb(122, 218, 165, --opacity--)';
+
+function getColor(opacity: number) {
+  return primary.replace('--opacity--', opacity.toString())
+}
 
 export const Colors = {
   light: {
@@ -76,18 +84,18 @@ export const Colors = {
     tabIconSelected: tintColorLight,
   },
   dark: {
-    text: '#FFFFFF',
+    text: '#ffffffc2',
     subtitle: '#AAAAAA',
-    background: '#111111',
-    cardBackground: '#222222',
-    border: '#333333',
+    background: '#0c0d0eff',
+    cardBackground: '#202026ff',
+    border: '#3333334f',
     borderLight: '#555',
-    borderDark: '#777',
+    borderDark: getColor(0.3),
     itemBg: '#222222',
-    tomatoRed: '#FF6347',
-    tint: tintColorDark,
-    icon: '#AAAAAA',
-    iconSubtle: '#ffffff39',
+    tomatoRed: getColor(0.8),
+    tint: getColor(0.8),
+    icon: '#aaaaaaef',
+    iconSubtle: '#ffffff62',
     iconActive: '#ffffffff',
     placeholder: '#AAAAAA',
     tagChipBg: '#ffffff19',
@@ -102,7 +110,7 @@ export const Colors = {
     statLabel: '#AAAAAA',
     statValue: '#FFFFFF',
     infoBannerBg: '#222222',
-    tabActiveBg: '#333333',
+    tabActiveBg: getColor(0.04),
     tabIconDefault: '#9BA1A6',
     tabIconSelected: tintColorDark,
   },

@@ -1,9 +1,9 @@
+import { Colors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { Drawer } from 'expo-router/drawer';
 import { Archive, FileText, HelpCircle, Settings, Tag, Trash2 } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
-import { Colors, Typography } from '@/constants/theme';
 
 function CustomDrawerContent(props: any) {
   const colorScheme = useColorScheme();
@@ -28,9 +28,9 @@ function CustomDrawerContent(props: any) {
   };
 
   return (
-    <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0 }}>
+    <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0, backgroundColor: themeColors.background }}>
       <View style={styles.drawerHeader}>
-        <Text style={[styles.drawerTitle, { color: tomatoRed }]}>Keep Notes</Text>
+        <Text style={[styles.drawerTitle, { color: themeColors.text }]}>NoteNest</Text>
       </View>
 
       <DrawerItem

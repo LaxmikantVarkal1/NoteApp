@@ -1,5 +1,4 @@
 "use dom";
-import bgPatterns from '@/constants/bg';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -483,10 +482,6 @@ export default function RichTextEditor({
     const cmd = parts[0];
     if (!cmd) return;
 
-
-
-
-
     if (cmd === 'blockType') {
       const newType = parts[1] as BlockType | undefined;
       if (!newType) return;
@@ -553,15 +548,15 @@ export default function RichTextEditor({
     }
 
     if (editorRef.current) {
-      if (cmd === 'bg') {
-        const color = parts[1];
-        editorRef.current.style.backgroundColor = color
-      }
+      // if (cmd === 'bg') {
+      //   const color = parts[1];
+      //   editorRef.current.style.backgroundColor = color
+      // }
 
-      if (cmd === 'pattern') {
-        const activeBackgroundPattern = bgPatterns.find((pattern) => pattern.id === parts[1])?.svg || '';
-        editorRef.current.style.backgroundImage = svgToBackgroundImage(activeBackgroundPattern);
-      }
+      // if (cmd === 'pattern') {
+      //   const activeBackgroundPattern = bgPatterns.find((pattern) => pattern.id === parts[1])?.svg || '';
+      //   editorRef.current.style.backgroundImage = svgToBackgroundImage(activeBackgroundPattern);
+      // }
 
       editorRef.current.focus();
     }

@@ -1,12 +1,13 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts } from 'expo-font';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import 'react-native-reanimated';
 
+import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -18,12 +19,16 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const themeColors = isDark ? Colors.dark : Colors.light;
+
 
   const [loaded, error] = useFonts({
-    'Ubuntu-Light': require('../assets/fonts/Ubuntu-Light.ttf'),
-    'Ubuntu-Regular': require('../assets/fonts/Ubuntu-Regular.ttf'),
-    'Ubuntu-Medium': require('../assets/fonts/Ubuntu-Medium.ttf'),
-    'Ubuntu-Bold': require('../assets/fonts/Ubuntu-Bold.ttf'),
+    'google-sans-medium': require('../assets/fonts/GoogleSans-Medium.ttf'),
+    'google-sans-regular': require('../assets/fonts/GoogleSans-Regular.ttf'),
+    'google-sans-semibold': require('../assets/fonts/GoogleSans-SemiBold.ttf'),
+    'google-sans-bold': require('../assets/fonts/GoogleSans-Bold.ttf'),
+    'google-sans-italic': require('../assets/fonts/GoogleSans-Italic.ttf')
   });
 
   useEffect(() => {
@@ -39,7 +44,11 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
+        <Stack screenOptions={{
+          contentStyle: { backgroundColor: themeColors.background },
+          animation: 'slide_from_right',
+          animationDuration: 200
+        }}>
           <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
           <Stack.Screen name="note" options={{ headerShown: false, presentation: 'modal' }} />
         </Stack>
