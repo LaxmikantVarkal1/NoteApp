@@ -1,3 +1,4 @@
+import { Colors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNoteStore } from '@/store/useNoteStore';
 import { DrawerActions } from '@react-navigation/native';
@@ -7,7 +8,6 @@ import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, Typography } from '@/constants/theme';
 
 export default function ArchiveScreen() {
   const insets = useSafeAreaInsets();
@@ -28,11 +28,11 @@ export default function ArchiveScreen() {
   const notesArray = Object.values(notes).sort((a, b) => b.createdAt - a.createdAt);
 
   // Filter archived and non-trashed notes matching search query
-  const archivedNotes = notesArray.filter((n) => 
-    n.archived && 
-    !n.trashed && 
+  const archivedNotes = notesArray.filter((n) =>
+    n.archived &&
+    !n.trashed &&
     (n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-     n.content.toLowerCase().includes(searchQuery.toLowerCase()))
+      n.content.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const handleScroll = (event: any) => {
@@ -79,7 +79,7 @@ export default function ArchiveScreen() {
         />
       </View>
 
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         onScroll={handleScroll}
         scrollEventThrottle={16}
@@ -124,7 +124,7 @@ function NoteCard({ note, index }: { note: any; index: number }) {
           </Text>
         ) : null}
         {note.pinned && <Pin size={16} color={themeColors.icon} style={styles.pinIcon} />}
-        
+
         {note.tags && note.tags.length > 0 && (
           <View style={styles.cardTagsContainer}>
             {note.tags.map((tag: string) => (

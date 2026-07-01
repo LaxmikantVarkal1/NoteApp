@@ -1,4 +1,5 @@
 "use dom";
+import bgPatterns from '@/constants/bg';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -18,6 +19,8 @@ export interface fontConfig {
   url: string;
   name: string;
 }
+
+
 
 export interface RichTextEditorProps {
   initialContent: string;
@@ -167,6 +170,7 @@ function insertAddRowAfter(targetItem: HTMLElement) {
   const addRow = document.createElement('div');
   addRow.className = 'checklist-add-row';
   addRow.setAttribute('contenteditable', 'false');
+
   addRow.innerHTML = `
     <span class="plus-icon">+</span>
     <span class="placeholder-text">List item</span>
@@ -174,7 +178,7 @@ function insertAddRowAfter(targetItem: HTMLElement) {
   targetItem.parentNode!.insertBefore(addRow, targetItem.nextSibling);
 }
 
-function enhanceChecklists(editorEl: HTMLElement) {
+function enhanceChecklists(editorEl: HTMLElement, backgroundColor: any) {
   // 1. Ensure all checklist items have a delete button
   const items = editorEl.querySelectorAll('.checklist-item');
   items.forEach((item) => {
@@ -187,7 +191,7 @@ function enhanceChecklists(editorEl: HTMLElement) {
      height="16"
      viewBox="0 0 24 24"
      fill="none"
-     stroke="currentColor"
+     stroke="#3a3a3af0"
      stroke-width="2"
      stroke-linecap="round"
      stroke-linejoin="round">
@@ -423,7 +427,7 @@ export default function RichTextEditor({
 
   const handleContentChange = useCallback(() => {
     if (editorRef.current) {
-      enhanceChecklists(editorRef.current);
+      enhanceChecklists(editorRef.current, backgroundColor);
       onChange(getCleanHTML(editorRef.current));
     }
   }, [onChange]);
@@ -440,7 +444,7 @@ export default function RichTextEditor({
   useEffect(() => {
     if (editorRef.current && !isInitialized.current) {
       editorRef.current.innerHTML = initialContent || '<p><br></p>';
-      enhanceChecklists(editorRef.current);
+      enhanceChecklists(editorRef.current, backgroundColor);
       isInitialized.current = true;
       setLoading(false);
     }
@@ -548,15 +552,15 @@ export default function RichTextEditor({
     }
 
     if (editorRef.current) {
-      // if (cmd === 'bg') {
-      //   const color = parts[1];
-      //   editorRef.current.style.backgroundColor = color
-      // }
+      if (cmd === 'bg') {
+        const color = parts[1];
+        editorRef.current.style.backgroundColor = color
+      }
 
-      // if (cmd === 'pattern') {
-      //   const activeBackgroundPattern = bgPatterns.find((pattern) => pattern.id === parts[1])?.svg || '';
-      //   editorRef.current.style.backgroundImage = svgToBackgroundImage(activeBackgroundPattern);
-      // }
+      if (cmd === 'pattern') {
+        const activeBackgroundPattern = bgPatterns.find((pattern) => pattern.id === parts[1])?.svg || '';
+        editorRef.current.style.backgroundImage = svgToBackgroundImage(activeBackgroundPattern);
+      }
 
       editorRef.current.focus();
     }

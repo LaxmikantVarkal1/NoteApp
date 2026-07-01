@@ -11,6 +11,7 @@ interface NoteState {
   isLoading: boolean;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  updateMultipleNotes: (ids: string[], action: 'archive' | 'pin' | 'delete') => Promise<void>;
   loadNotes: () => Promise<void>;
   addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateNote: (id: string, note: Partial<Note>) => Promise<void>;
@@ -52,6 +53,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     const notesArray = await loadNotesFromFS();
     const tags = await loadTagsFromFS();
     const settings = await loadSettingsFromFS();
+    console.log(notesArray[0])
 
     const notesRecord: Record<string, Note> = {};
     notesArray.forEach((n) => {
@@ -112,6 +114,21 @@ export const useNoteStore = create<NoteState>((set, get) => ({
         updatedAt: Date.now(),
       },
     };
+    set({ notes: updatedNotes });
+    await saveNotesToFS(Object.values(updatedNotes));
+  },
+  updateMultipleNotes: async (ids: string[], action: string) => {
+    const currentNotes = get().notes;
+    const updatedNotes: any = { ...currentNotes };
+    ids.forEach((id: string) => {
+      if (updatedNotes[id]) {
+        updatedNotes[id] = {
+          ...updatedNotes[id],
+          [action]: !updatedNotes[id][action],
+          updatedAt: Date.now(),
+        };
+      }
+    });
     set({ notes: updatedNotes });
     await saveNotesToFS(Object.values(updatedNotes));
   },

@@ -639,8 +639,7 @@ const styles = StyleSheet.create({
   },
   fmtBtnText: {
     fontSize: 13,
-    fontFamily: Typography.medium,
-    fontWeight: '600',
+    fontFamily: Typography.semiBold,
     padding: 5
   },
   fmtSep: {

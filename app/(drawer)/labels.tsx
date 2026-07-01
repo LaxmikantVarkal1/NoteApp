@@ -1,16 +1,14 @@
+import { Colors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNoteStore } from '@/store/useNoteStore';
-import { useNavigation, useRouter } from 'expo-router';
-import { ArrowLeft, Check, Edit2, Tag, Trash2 } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { ArrowLeft, Check, Edit2, Plus, Tag, Trash2, X } from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, Typography } from '@/constants/theme';
 
 export default function LabelsScreen() {
-  const selectedTags = ["ggfgh"]
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
   const router = useRouter();
   const { tags, loadNotes, addTag, deleteTag, updateTag } = useNoteStore();
   const colorScheme = useColorScheme();
@@ -21,6 +19,7 @@ export default function LabelsScreen() {
   const [editingTag, setEditingTag] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     loadNotes();
@@ -30,7 +29,8 @@ export default function LabelsScreen() {
     if (newTagName.trim() === '') return;
     addTag(newTagName.trim());
     setNewTagName('');
-    setIsInputFocused(false);
+    inputRef.current?.clear();
+    //setIsInputFocused(false);
   };
 
   const handleSaveRename = (oldTag: string) => {
@@ -87,13 +87,14 @@ export default function LabelsScreen() {
             placeholderTextColor={themeColors.placeholder}
             value={newTagName}
             onChangeText={setNewTagName}
-            onFocus={() => setIsInputFocused(true)}
+            ref={inputRef}
+            // onFocus={() => setIsInputFocused(true)}
             onSubmitEditing={handleCreateTag}
           />
 
-          {isInputFocused && (
+          {inputRef.current?.isFocused() && (
             <TouchableOpacity onPress={handleCreateTag} style={styles.actionButton}>
-              <Check color={themeColors.tomatoRed} size={22} />
+              <Plus color={themeColors.tomatoRed} size={22} />
             </TouchableOpacity>
           )}
         </View>
@@ -103,7 +104,7 @@ export default function LabelsScreen() {
           {tags.map((tag) => {
             const isEditingThis = editingTag === tag;
             return (
-              <View key={tag} style={[styles.tagRow, { backgroundColor: isEditingThis ? "#ff7a3d1c" : itemBg }]}>
+              <View key={tag} style={[styles.tagRow, { backgroundColor: isEditingThis ? themeColors.cardBackground : itemBg }]}>
                 {isEditingThis ? (
                   <TouchableOpacity onPress={() => deleteTag(tag)} style={styles.actionButton}>
                     <Trash2 color={themeColors.tomatoRed} size={20} />
@@ -128,9 +129,15 @@ export default function LabelsScreen() {
                 )}
 
                 {isEditingThis ? (
-                  <TouchableOpacity onPress={() => handleSaveRename(tag)} style={styles.actionButton}>
-                    <Check color={themeColors.tomatoRed} size={20} />
-                  </TouchableOpacity>
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    <TouchableOpacity onPress={() => handleSaveRename(tag)} style={styles.actionButton}>
+                      <Check color={themeColors.tomatoRed} size={20} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => { setEditingTag(null) }} style={styles.actionButton}>
+                      <X color={themeColors.tomatoRed} size={20} />
+                    </TouchableOpacity>
+                  </View>
+
                 ) : (
                   <TouchableOpacity onPress={() => startEditing(tag)} style={styles.actionButton}>
                     <Edit2 color={iconColor} size={18} />
