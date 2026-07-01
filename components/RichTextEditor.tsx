@@ -578,6 +578,52 @@ export default function RichTextEditor({
     handleContentChange();
   }, [formatCommand, handleContentChange, updateFormats]);
 
+  const scrollCursorIntoView = useCallback(() => {
+    requestAnimationFrame(() => {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || !editorRef.current) return;
+
+      const range = sel.getRangeAt(0);
+      if (!range.collapsed) return;
+
+      const tempSpan = document.createElement("span");
+      tempSpan.textContent = "\u200b";
+      range.insertNode(tempSpan);
+
+      const spanRect = tempSpan.getBoundingClientRect();
+      const editorRect = editorRef.current.getBoundingClientRect();
+
+      const currentScroll = editorRef.current.scrollTop;
+
+      if (spanRect.bottom > editorRect.bottom - 30) {
+        editorRef.current.scrollTo({
+          top: currentScroll + (spanRect.bottom - editorRect.bottom + 60),
+          behavior: "smooth",
+        });
+      } else if (spanRect.top < editorRect.top + 10) {
+        editorRef.current.scrollTo({
+          top: currentScroll - (editorRect.top - spanRect.top + 60),
+          behavior: "smooth",
+        });
+      }
+
+      tempSpan.remove();
+      editorRef.current.normalize();
+    });
+  }, []);
+
+  // Listen for viewport resize (keyboard open/close triggers this in WebView)
+  useEffect(() => {
+    const handleResize = () => {
+      setTimeout(() => {
+        scrollCursorIntoView();
+      }, 10);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [scrollCursorIntoView]);
+
   // ─── Input handler (Markdown Shortcuts) ───────────────────────────────────
   const handleEditorInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
@@ -621,7 +667,8 @@ export default function RichTextEditor({
     }
 
     handleContentChange();
-  }, [handleContentChange]);
+    scrollCursorIntoView();
+  }, [handleContentChange, scrollCursorIntoView]);
 
   // ─── KeyDown events ────────────────────────────────────────────────────────
   const handleEditorKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -655,6 +702,7 @@ export default function RichTextEditor({
         sel?.addRange(newRange);
 
         handleContentChange();
+        scrollCursorIntoView();
         return;
       }
     }
@@ -705,7 +753,10 @@ export default function RichTextEditor({
         }
       }
     }
-  }, [handleContentChange]);
+
+    // Scroll cursor into view after any key that might move it
+    scrollCursorIntoView();
+  }, [handleContentChange, scrollCursorIntoView]);
 
   // ─── Click handler (Checkbox Toggles, Delete, Add Row) ─────────────────────
   const handleEditorClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -776,9 +827,6 @@ export default function RichTextEditor({
       return;
     }
   }, [handleContentChange]);
-
-
-
 
   // ─── JSX ───────────────────────────────────────────────────────────────────
   return (
@@ -1044,6 +1092,7 @@ export default function RichTextEditor({
         onInput={handleEditorInput}
         onKeyDown={handleEditorKeyDown}
         onClick={handleEditorClick}
+        onFocus={() => setTimeout(scrollCursorIntoView, 200)}
       />
     </div>
   );

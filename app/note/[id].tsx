@@ -17,10 +17,6 @@ export default function NoteScreen() {
   const isNew = id === 'new';
   const insets = useSafeAreaInsets();
   const dimensios = useWindowDimensions();
-  const editorSizes = useMemo(() => ({
-    width: dimensios.width - 0,
-    height: dimensios.height - 150
-  }), [dimensios.width, dimensios.height]);
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -45,6 +41,14 @@ export default function NoteScreen() {
   const navigation = useNavigation()
 
   const progress = useSharedValue(0);
+
+  const editorSizes = useMemo(() => {
+    const formatBarOffset = keyboardHeight > 10 ? keyboardHeight + 100 : 0;
+    return {
+      width: dimensios.width,
+      height: dimensios.height - 150 - formatBarOffset,
+    };
+  }, [dimensios.width, dimensios.height, keyboardHeight]);
 
 
   useEffect(() => {
@@ -429,7 +433,7 @@ export default function NoteScreen() {
           flexDirection: 'row',
           width: '100%',
           zIndex: 999,
-          padding: 15,
+          padding: 10,
           backgroundColor: currentBgColor,
         }]}>
           {isOnline && <GestureDetector gesture={gesture}>

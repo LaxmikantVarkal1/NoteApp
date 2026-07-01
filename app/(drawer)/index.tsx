@@ -8,7 +8,7 @@ import { useNavigation, useRouter } from 'expo-router';
 import { FilterIcon, Menu, Pin, Plus } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import Animated, { Extrapolation, FadeInUp, interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, Extrapolation, FadeInUp, interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function NotesScreen() {
@@ -43,7 +43,8 @@ export default function NotesScreen() {
   const otherNotes = filteredNotes.filter((n) => !n.pinned);
   useEffect(() => {
     progress.value = withTiming(showTopActionbar ? 1 : 0, {
-      duration: 300,
+      duration: 100,
+      easing: Easing.out(Easing.cubic)
     });
   }, [showTopActionbar]);
 

@@ -54,14 +54,14 @@ function getColor(opacity: number) {
 export const Colors = {
   light: {
     text: '#333333',
-    subtitle: '#666666',
-    background: '#FFFFFF',
+    subtitle: '#666666ff',
+    background: '#e8fffeff',
     cardBackground: '#FFFFFF',
     border: '#eeeeee17',
     borderLight: '#CCC',
-    borderDark: '#555',
-    itemBg: '#F9F9F9',
-    tomatoRed: '#FF6347',
+    borderDark: '#555555ff',
+    itemBg: getColor(0.2),
+    tomatoRed: getColor(0.8),
     tint: tintColorLight,
     icon: '#666666',
     iconSubtle: '#33333343',
@@ -86,7 +86,7 @@ export const Colors = {
   dark: {
     text: '#ffffffc2',
     subtitle: '#AAAAAA',
-    background: '#0c0d0eff',
+    background: '#141618ff',
     cardBackground: '#202026ff',
     border: '#3333334f',
     borderLight: '#555',
