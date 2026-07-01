@@ -43,12 +43,11 @@ export default function NoteScreen() {
   const progress = useSharedValue(0);
 
   const editorSizes = useMemo(() => {
-    const formatBarOffset = keyboardHeight > 10 ? keyboardHeight + 100 : 0;
     return {
       width: dimensios.width,
-      height: dimensios.height - 150 - formatBarOffset,
+      height: dimensios.height,
     };
-  }, [dimensios.width, dimensios.height, keyboardHeight]);
+  }, [dimensios.width, dimensios.height]);
 
 
   useEffect(() => {
@@ -393,110 +392,87 @@ export default function NoteScreen() {
         </View>
       )}
 
-      <View style={styles.editorWrapper}>
-        <RichTextEditor
-          initialContent={existingNote?.content || ''}
-          onChange={setContent}
-          sizes={editorSizes}
-          textColor={themeColors.text}
-          formatCommand={formatCommand}
-          onBlockTypeChange={setActiveBlockType}
-          onActiveFormatsChange={setActiveInlineFormats}
-          configs={{
-            font: CustomFonts[selectedFont || 'Roboto']
-          }}
-        />
-      </View>
-
-
-      {/* 
-      <View style={[styles.bottomBar, { backgroundColor: isDark ? '#222' : '#F8F9FA' }]}>
-        <TouchableOpacity style={styles.iconButton}>
-          <CheckSquare color={iconColor} size={24} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton}>
-          <Mic color={iconColor} size={24} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton}>
-          <ImageIcon color={iconColor} size={24} />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }} />
-        <TouchableOpacity style={styles.iconButton}>
-          <MoreVertical color={iconColor} size={24} />
-        </TouchableOpacity>
-      </View> */}
-
-      {
-        showFormatBar && <View style={[{
-          position: "absolute",
-          bottom: keyboardHeight,
-          flexDirection: 'row',
-          width: '100%',
-          zIndex: 999,
-          padding: 10,
-          backgroundColor: currentBgColor,
-        }]}>
-          {isOnline && <GestureDetector gesture={gesture}>
-            <TouchableOpacity
-              style={{ height: 'auto', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }}>
-              <Text style={[{ color: themeColors.text }]}>{selectedFont + ''}</Text>
-            </TouchableOpacity>
-          </GestureDetector>}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyboardShouldPersistTaps="always"
-            contentContainerStyle={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              paddingHorizontal: 16,
-              gap: 12,
+      <View style={{ flex: 1, paddingBottom: keyboardHeight > 10 ? keyboardHeight : 0 }}>
+        <View style={styles.editorWrapper}>
+          <RichTextEditor
+            initialContent={existingNote?.content || ''}
+            onChange={setContent}
+            sizes={editorSizes}
+            textColor={themeColors.text}
+            formatCommand={formatCommand}
+            onBlockTypeChange={setActiveBlockType}
+            onActiveFormatsChange={setActiveInlineFormats}
+            configs={{
+              font: CustomFonts[selectedFont || 'Roboto']
             }}
-          >
+          />
+        </View>
 
-            <View style={[styles.formatBar, { paddingHorizontal: 0, paddingVertical: 0, gap: 12 }]}>
-              {/* Block type buttons */}
-              {(['paragraph', 'heading1', 'heading2', 'heading3'] as const).map((type) => {
-                const label = type === 'paragraph' ? 'T' : type === 'heading1' ? 'H1' : type === 'heading2' ? 'H2' : 'H3';
-                const isActive = activeBlockType === type;
-                return (
+        {showFormatBar && (
+          <View style={[styles.formatBarContainer, { backgroundColor: currentBgColor }]}>
+            {isOnline && (
+              <GestureDetector gesture={gesture}>
+                <TouchableOpacity
+                  style={{ justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }}>
+                  <Text style={[{ color: themeColors.text }]}>{selectedFont + ''}</Text>
+                </TouchableOpacity>
+              </GestureDetector>
+            )}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyboardShouldPersistTaps="always"
+              contentContainerStyle={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: 16,
+                gap: 12,
+              }}
+            >
+              <View style={[styles.formatBar, { paddingHorizontal: 0, paddingVertical: 0, gap: 12 }]}>
+                {/* Block type buttons */}
+                {(['paragraph', 'heading1', 'heading2', 'heading3'] as const).map((type) => {
+                  const label = type === 'paragraph' ? 'T' : type === 'heading1' ? 'H1' : type === 'heading2' ? 'H2' : 'H3';
+                  const isActive = activeBlockType === type;
+                  return (
+                    <TouchableOpacity
+                      key={type}
+                      onPress={() => sendBlockType(type)}
+                      style={[styles.fmtBtn]}
+                    >
+                      <Text style={[styles.fmtBtnText, { color: isActive ? isActiveAction : iconColor }, type !== 'paragraph' && { fontWeight: '700' }]}>{label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+
+                <View style={styles.fmtSep} />
+                {([
+                  { cmd: 'bold', label: 'B', isActive: activeInlineFormats.bold, style: { fontWeight: '700' as const } },
+                  { cmd: 'italic', label: 'I', isActive: activeInlineFormats.italic, style: { fontStyle: 'italic' as const } },
+                  { cmd: 'underline', label: 'U', isActive: activeInlineFormats.underline, style: { textDecorationLine: 'underline' as const } },
+                  { cmd: 'strikeThrough', label: 'S', isActive: activeInlineFormats.strikethrough, style: { textDecorationLine: 'line-through' as const } },
+                ]).map(({ cmd, label, isActive, style }) => (
                   <TouchableOpacity
-                    key={type}
-                    onPress={() => sendBlockType(type)}
+                    key={cmd}
+                    onPress={() => sendFormat(cmd)}
                     style={[styles.fmtBtn]}
                   >
-                    <Text style={[styles.fmtBtnText, { color: isActive ? isActiveAction : iconColor }, type !== 'paragraph' && { fontWeight: '700' }]}>{label}</Text>
+                    <Text style={[styles.fmtBtnText, style, { color: isActive ? isActiveAction : iconColor }]}>{label}</Text>
                   </TouchableOpacity>
-                );
-              })}
+                ))}
 
-              <View style={styles.fmtSep} />
-              {([
-                { cmd: 'bold', label: 'B', isActive: activeInlineFormats.bold, style: { fontWeight: '700' as const } },
-                { cmd: 'italic', label: 'I', isActive: activeInlineFormats.italic, style: { fontStyle: 'italic' as const } },
-                { cmd: 'underline', label: 'U', isActive: activeInlineFormats.underline, style: { textDecorationLine: 'underline' as const } },
-                { cmd: 'strikeThrough', label: 'S', isActive: activeInlineFormats.strikethrough, style: { textDecorationLine: 'line-through' as const } },
-              ]).map(({ cmd, label, isActive, style }) => (
+                <View style={styles.fmtSep} />
                 <TouchableOpacity
-                  key={cmd}
-                  onPress={() => sendFormat(cmd)}
+                  onPress={() => sendBlockType('checklist')}
                   style={[styles.fmtBtn]}
                 >
-                  <Text style={[styles.fmtBtnText, style, { color: isActive ? isActiveAction : iconColor }]}>{label}</Text>
+                  <CheckSquare color={activeBlockType === 'checklist' ? isActiveAction : iconColor} size={18} />
                 </TouchableOpacity>
-              ))}
-
-              <View style={styles.fmtSep} />
-              <TouchableOpacity
-                onPress={() => sendBlockType('checklist')}
-                style={[styles.fmtBtn]}
-              >
-                <CheckSquare color={activeBlockType === 'checklist' ? isActiveAction : iconColor} size={18} />
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </View>
-      }
+              </View>
+            </ScrollView>
+          </View>
+        )}
+      </View>
 
       <Modal
         visible={showMenu}
@@ -625,14 +601,22 @@ const styles = StyleSheet.create({
   },
   editorWrapper: {
     flex: 1,
-    marginBottom: 16,
     overflow: 'hidden',
+    // backgroundColor: 'red'
+  },
+  formatBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(128,128,128,0.2)',
+    paddingVertical: 2,
+    height: 44,
   },
   formatBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
-    paddingVertical: 10,
+    paddingVertical: 0,
     gap: 2,
   },
   fmtBtn: {

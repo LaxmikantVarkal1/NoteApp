@@ -597,12 +597,12 @@ export default function RichTextEditor({
 
       if (spanRect.bottom > editorRect.bottom - 30) {
         editorRef.current.scrollTo({
-          top: currentScroll + (spanRect.bottom - editorRect.bottom + 60),
+          top: currentScroll + (spanRect.bottom - editorRect.bottom + 30),
           behavior: "smooth",
         });
       } else if (spanRect.top < editorRect.top + 10) {
         editorRef.current.scrollTo({
-          top: currentScroll - (editorRect.top - spanRect.top + 60),
+          top: currentScroll - (editorRect.top - spanRect.top + 30),
           behavior: "smooth",
         });
       }
@@ -887,10 +887,8 @@ export default function RichTextEditor({
         .editor-root {
           display: flex;
           flex-direction: column;
-          min-height: 100%;
           font-family: 'Inter', system-ui, -apple-system, sans-serif;
           font-size: 16px;
-          line-height: 1.7;
           position: relative;
           width: ${sizes?.width ? sizes.width + "px" : "100%"};
           height: ${sizes?.height ? sizes.height + "px" : "100%"};
@@ -913,17 +911,20 @@ export default function RichTextEditor({
 
         .editor-content {
           flex: 1;
-          padding: 20px 20px 120px;
+          padding: 10px 16px 24px;
           min-height: 300px;
           outline: none;
           word-break: break-word;
           caret-color: ${accentColor};
           overflow-y: auto;
+          line-height: 1.6;
         }
 
         .editor-content p {
           position: relative;
-          margin-bottom: 8px;
+          margin: 0;
+          padding: 0;
+          min-height: 1.6em;
         }
         .editor-content p:first-child:empty::before,
         .editor-content p:first-child:has(br:only-child)::before {
