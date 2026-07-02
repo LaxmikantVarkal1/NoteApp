@@ -1,5 +1,6 @@
 "use dom";
 import bgPatterns from '@/constants/bg';
+import { getColor } from '@/constants/theme';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -191,7 +192,7 @@ function enhanceChecklists(editorEl: HTMLElement, backgroundColor: any) {
      height="16"
      viewBox="0 0 24 24"
      fill="none"
-     stroke="#3a3a3af0"
+     stroke="${getColor(0.8)}"
      stroke-width="2"
      stroke-linecap="round"
      stroke-linejoin="round">
@@ -800,10 +801,20 @@ export default function RichTextEditor({
       const newItem = document.createElement('div');
       newItem.className = 'checklist-item';
 
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.setAttribute('contenteditable', 'false');
-      newItem.appendChild(checkbox);
+      // const checkbox = document.createElement('input');
+      // checkbox.type = 'checkbox';
+      // checkbox.setAttribute('contenteditable', 'false');
+      // newItem.appendChild(checkbox);
+      const label = document.createElement("label");
+      label.className = "checkbox-label";
+      label.setAttribute("contenteditable", "false");
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.setAttribute("contenteditable", "false");
+
+      label.appendChild(checkbox);
+      newItem.appendChild(label);
 
       const textSpan = document.createElement('span');
       textSpan.className = 'checklist-text';
@@ -1000,7 +1011,7 @@ export default function RichTextEditor({
   appearance: none;
   width: 18px;
   height: 18px;
-  margin-top: 3px;
+  margin-top: 4px;
   border: 2px solid ${accentColor};
   border-radius: 5px;
   cursor: pointer;
@@ -1019,7 +1030,7 @@ export default function RichTextEditor({
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: ${getColor(0.8)};
   font-size: 10px;
   font-weight: bold;
 }

@@ -47,7 +47,7 @@ export const NoteColors = {
 // let color = rgb(122, 218, 165)
 let primary = 'rgba(122, 218, 165, --opacity--)';
 
-function getColor(opacity: number) {
+export function getColor(opacity: number) {
   return primary.replace('--opacity--', opacity.toString())
 }
 

@@ -48,9 +48,13 @@ export default function NotesScreen() {
     });
   }, [showTopActionbar]);
 
+
+
   const renderNoteColumns = (notesToRender: any[], setShowTopActionbar: any, showTopActionbar: boolean) => {
-    const leftColumn = notesToRender.filter((_, i) => i % 2 === 0);
-    const rightColumn = notesToRender.filter((_, i) => i % 2 !== 0);
+    // Filter out trashed notes BEFORE splitting so the i % 2 balance is never broken by deleted cards
+    const visibleNotes = notesToRender.filter((n) => !n.trashed);
+    const leftColumn = visibleNotes.filter((_, i) => i % 2 === 0);
+    const rightColumn = visibleNotes.filter((_, i) => i % 2 !== 0);
 
     return (
       <View style={styles.columnsContainer}>
@@ -241,8 +245,6 @@ function NoteCard({ note, index, setShowTopActionbar, showTopActionbar, selected
     }
     setSelectedNotes(tempSelectedNotes);
   }
-
-  if (note.trashed) return null;
 
   if (!isLoading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator color={themeColors.iconActive} size={24} /></View>
 
