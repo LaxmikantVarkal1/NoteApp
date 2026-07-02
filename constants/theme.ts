@@ -45,7 +45,7 @@ export const NoteColors = {
   dark: ['#111111', '#4A1D1A', '#1C3322', '#1B2C3B', '#3B3A1C'],
 };
 // let color = rgb(122, 218, 165)
-let primary = ' rgb(122, 218, 165, --opacity--)';
+let primary = 'rgba(122, 218, 165, --opacity--)';
 
 function getColor(opacity: number) {
   return primary.replace('--opacity--', opacity.toString())
@@ -79,7 +79,7 @@ export const Colors = {
     statLabel: '#666666',
     statValue: '#333333',
     infoBannerBg: '#F1F3F4',
-    tabActiveBg: '#FFF0EE',
+    tabActiveBg: getColor(0.1),
     tabIconDefault: '#687076',
     tabIconSelected: tintColorLight,
   },

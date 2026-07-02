@@ -1,4 +1,5 @@
 import RichTextEditor from '@/components/RichTextEditor';
+import DraggableFAB from '@/components/floting-button';
 import bgPatterns from '@/constants/bg';
 import { Colors, CustomFonts, NoteColors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -11,6 +12,7 @@ import { ActivityIndicator, Keyboard, Modal, Platform, ScrollView, StyleSheet, T
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { Extrapolation, interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 
 export default function NoteScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -31,7 +33,7 @@ export default function NoteScreen() {
   const [selectedFont, setSelectedFont] = useState('Ubuntu');
   const [pinned, setPinned] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
-  const [showFormatBar, setShowFormatBar] = useState(true);
+  const [showFormatBar, setShowFormatBar] = useState(false);
   const [formatCommand, setFormatCommand] = useState<string | undefined>(undefined);
   const [activeBlockType, setActiveBlockType] = useState<string>('paragraph');
   const [activeInlineFormats, setActiveInlineFormats] = useState({
@@ -408,70 +410,9 @@ export default function NoteScreen() {
           />
         </View>
 
-        {showFormatBar && (
-          <View style={[styles.formatBarContainer, { backgroundColor: currentBgColor }]}>
-            {isOnline && (
-              <GestureDetector gesture={gesture}>
-                <TouchableOpacity
-                  style={{ justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10 }}>
-                  <Text style={[{ color: themeColors.text }]}>{selectedFont + ''}</Text>
-                </TouchableOpacity>
-              </GestureDetector>
-            )}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              keyboardShouldPersistTaps="always"
-              contentContainerStyle={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingHorizontal: 16,
-                gap: 12,
-              }}
-            >
-              <View style={[styles.formatBar, { paddingHorizontal: 0, paddingVertical: 0, gap: 12 }]}>
-                {/* Block type buttons */}
-                {(['paragraph', 'heading1', 'heading2', 'heading3'] as const).map((type) => {
-                  const label = type === 'paragraph' ? 'T' : type === 'heading1' ? 'H1' : type === 'heading2' ? 'H2' : 'H3';
-                  const isActive = activeBlockType === type;
-                  return (
-                    <TouchableOpacity
-                      key={type}
-                      onPress={() => sendBlockType(type)}
-                      style={[styles.fmtBtn]}
-                    >
-                      <Text style={[styles.fmtBtnText, { color: isActive ? isActiveAction : iconColor }, type !== 'paragraph' && { fontWeight: '700' }]}>{label}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
 
-                <View style={styles.fmtSep} />
-                {([
-                  { cmd: 'bold', label: 'B', isActive: activeInlineFormats.bold, style: { fontWeight: '700' as const } },
-                  { cmd: 'italic', label: 'I', isActive: activeInlineFormats.italic, style: { fontStyle: 'italic' as const } },
-                  { cmd: 'underline', label: 'U', isActive: activeInlineFormats.underline, style: { textDecorationLine: 'underline' as const } },
-                  { cmd: 'strikeThrough', label: 'S', isActive: activeInlineFormats.strikethrough, style: { textDecorationLine: 'line-through' as const } },
-                ]).map(({ cmd, label, isActive, style }) => (
-                  <TouchableOpacity
-                    key={cmd}
-                    onPress={() => sendFormat(cmd)}
-                    style={[styles.fmtBtn]}
-                  >
-                    <Text style={[styles.fmtBtnText, style, { color: isActive ? isActiveAction : iconColor }]}>{label}</Text>
-                  </TouchableOpacity>
-                ))}
 
-                <View style={styles.fmtSep} />
-                <TouchableOpacity
-                  onPress={() => sendBlockType('checklist')}
-                  style={[styles.fmtBtn]}
-                >
-                  <CheckSquare color={activeBlockType === 'checklist' ? isActiveAction : iconColor} size={18} />
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-          </View>
-        )}
+
       </View>
 
       <Modal
@@ -522,6 +463,77 @@ export default function NoteScreen() {
         </TouchableOpacity>
       </Modal>
 
+      <DraggableFAB
+        contentWidth={dimensios.width - 80}
+        fabBgColor={isDark ? 'rgba(9, 9, 9, 0.97)' : 'rgba(255, 255, 255, 0.97)'}
+        fabBorderColor={isDark ? 'rgba(38, 40, 39, 0.38)' : 'rgba(0, 0, 0, 0.08)'}
+        iconColor={themeColors.text}
+        keyboardHeight={keyboardHeight - 100}
+      >
+        {/* Format bar content — rendered inside expanded capsule */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="always"
+          contentContainerStyle={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 8,
+            gap: 4,
+            backgroundColor: themeColors.cardBackground
+          }}
+        >
+          {/* Block type buttons */}
+          {(['paragraph', 'heading1', 'heading2', 'heading3'] as const).map((type) => {
+            const label = type === 'paragraph' ? 'T' : type === 'heading1' ? 'H1' : type === 'heading2' ? 'H2' : 'H3';
+            const isActive = activeBlockType === type;
+            return (
+              <TouchableOpacity
+                key={type}
+                onPress={() => sendBlockType(type)}
+                style={[styles.fmtBtn]}
+              >
+                <Text style={[styles.fmtBtnText, { color: isActive ? isActiveAction : iconColor }, type !== 'paragraph' && { fontWeight: '700' }]}>{label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+
+          <View style={styles.fmtSep} />
+          {([
+            { cmd: 'bold', label: 'B', isActive: activeInlineFormats.bold, style: { fontWeight: '700' as const } },
+            { cmd: 'italic', label: 'I', isActive: activeInlineFormats.italic, style: { fontStyle: 'italic' as const } },
+            { cmd: 'underline', label: 'U', isActive: activeInlineFormats.underline, style: { textDecorationLine: 'underline' as const } },
+            { cmd: 'strikeThrough', label: 'S', isActive: activeInlineFormats.strikethrough, style: { textDecorationLine: 'line-through' as const } },
+          ]).map(({ cmd, label, isActive, style }) => (
+            <TouchableOpacity
+              key={cmd}
+              onPress={() => sendFormat(cmd)}
+              style={[styles.fmtBtn]}
+            >
+              <Text style={[styles.fmtBtnText, style, { color: isActive ? isActiveAction : iconColor }]}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+
+          <View style={styles.fmtSep} />
+          <TouchableOpacity
+            onPress={() => sendBlockType('checklist')}
+            style={[styles.fmtBtn]}
+          >
+            <CheckSquare color={activeBlockType === 'checklist' ? isActiveAction : iconColor} size={18} />
+          </TouchableOpacity>
+
+          {isOnline && (
+            <>
+              <View style={styles.fmtSep} />
+              <GestureDetector gesture={gesture}>
+                <TouchableOpacity style={styles.fmtBtn}>
+                  <Text style={[styles.fmtBtnText, { color: iconColor }]}>{selectedFont}</Text>
+                </TouchableOpacity>
+              </GestureDetector>
+            </>
+          )}
+        </ScrollView>
+      </DraggableFAB>
     </View>
   );
 }
@@ -633,7 +645,6 @@ const styles = StyleSheet.create({
   fmtSep: {
     width: 1,
     height: 18,
-    backgroundColor: '#8b8a8ae4',
     marginHorizontal: 4,
   },
   bottomBar: {
