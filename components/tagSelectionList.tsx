@@ -1,10 +1,10 @@
+import { Colors, Typography } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useNoteStore } from "@/store/useNoteStore";
 import { router } from "expo-router";
 import { Check, Plus, Tag } from "lucide-react-native";
 import { useState } from "react";
 import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
-import { Colors, Typography } from "@/constants/theme";
 
 export default function SelectionList() {
     const [newTagInput, setNewTagInput] = useState('');
@@ -42,7 +42,7 @@ export default function SelectionList() {
         router.back();
     }
     return (
-        <View style={[styles.modalContent, { backgroundColor: themeColors.menuBg }]}>
+        <View style={[styles.modalContent, { backgroundColor: themeColors.background }]}>
             <View style={styles.modalHeader}>
                 <Text style={[styles.modalTitle, { color: themeColors.text }]}>Label note</Text>
                 <TouchableOpacity onPress={handleSaveAndGoBack}>

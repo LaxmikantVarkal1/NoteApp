@@ -46,7 +46,7 @@ export default function RootLayout() {
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack screenOptions={{
           contentStyle: { backgroundColor: themeColors.background },
-          animation: 'slide_from_right',
+          animation: 'fade_from_bottom',
           animationDuration: 200
         }}>
           <Stack.Screen name="(drawer)" options={{ headerShown: false }} />

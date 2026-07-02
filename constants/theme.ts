@@ -85,7 +85,7 @@ export const Colors = {
   },
   dark: {
     text: '#ffffffc2',
-    subtitle: '#AAAAAA',
+    subtitle: '#535457ff',
     background: '#141618ff',
     cardBackground: '#202026ff',
     border: '#3333334f',

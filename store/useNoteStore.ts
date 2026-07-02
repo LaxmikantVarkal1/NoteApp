@@ -316,3 +316,35 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   },
 
 }));
+
+interface pageStyleState {
+  color: string,
+  setColor: (color: string) => void,
+
+  backgroundPattern: string,
+  setBackgroundPattern: (backgroundPattern: string) => void,
+
+  selectedFont: string,
+  setSelectedFont: (font: string) => void,
+
+  fontSize: number,
+  setFontSize: (size: number) => void,
+
+  textAlign: 'left' | 'center' | 'right',
+  setTextAlign: (align: 'left' | 'center' | 'right') => void,
+}
+
+export const usePageStyle = create<pageStyleState>((set) => (
+  {
+    color: "",
+    backgroundPattern: "",
+    selectedFont: "",
+    fontSize: 16,
+    textAlign: 'left',
+    setColor: (color: string) => set({ color }),
+    setBackgroundPattern: (backgroundPattern: string) => set({ backgroundPattern }),
+    setSelectedFont: (font: string) => set({ selectedFont: font }),
+    setFontSize: (size: number) => set({ fontSize: size }),
+    setTextAlign: (align) => set({ textAlign: align }),
+  }
+))

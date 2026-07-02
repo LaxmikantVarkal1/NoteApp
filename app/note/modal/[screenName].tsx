@@ -1,3 +1,4 @@
+import PageStyle from '@/components/page-style';
 import SelectionList from '@/components/tagSelectionList';
 import { useLocalSearchParams } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
@@ -17,7 +18,7 @@ export default function CustomModal() {
     if (screenName === "pageStyle") {
         return (
             <View style={styles.container}>
-                <Text>Page Style</Text>
+                <PageStyle />
             </View>
         )
     }

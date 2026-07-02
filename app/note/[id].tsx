@@ -4,7 +4,7 @@ import bgPatterns from '@/constants/bg';
 import { Colors, CustomFonts, NoteColors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
-import { useNoteStore } from '@/store/useNoteStore';
+import { useNoteStore, usePageStyle } from '@/store/useNoteStore';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { Archive, Check, CheckSquare, CircleDashed, MoreVertical, Palette, Pin, Tag, Trash2 } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -28,14 +28,13 @@ export default function NoteScreen() {
   const [keyboardHeight, setKeyboardHeight] = useState(10);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [color, setColor] = useState('');
-  const [backgroundPattern, setBackgroundPattern] = useState('');
-  const [selectedFont, setSelectedFont] = useState('Ubuntu');
+  const { color, setColor, backgroundPattern, setBackgroundPattern, selectedFont, setSelectedFont } = usePageStyle();
   const [pinned, setPinned] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
   const [showFormatBar, setShowFormatBar] = useState(false);
   const [formatCommand, setFormatCommand] = useState<string | undefined>(undefined);
   const [activeBlockType, setActiveBlockType] = useState<string>('paragraph');
+  const [showFab, setShowFab] = useState(false);
   const [activeInlineFormats, setActiveInlineFormats] = useState({
     bold: false, italic: false, underline: false, strikethrough: false,
   });
@@ -108,6 +107,13 @@ export default function NoteScreen() {
     loadNotes();
   }, [loadNotes]);
 
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setShowFab(true)
+    }, 1000)
+    return () => clearTimeout(t)
+  }, [])
+
   const sendFormat = (cmd: string) => {
     setFormatCommand(`${cmd}:${Date.now()}`);
   };
@@ -124,28 +130,36 @@ export default function NoteScreen() {
   const doubleTap = Gesture.Tap().runOnJS(true)
     .numberOfTaps(2)
     .onEnd(() => {
-      setSelectedFont((prev) => {
-        let font = Object.keys(CustomFonts);
-        let index = font.indexOf(prev);
-        if (index < font.length - 1) {
-          index++;
-        } else {
-          index = 0;
-        }
-        return font[index];
-      });
+      let font = Object.keys(CustomFonts);
+      let index = font.indexOf(selectedFont);
+      if (index < font.length - 1) {
+        index++;
+      } else {
+        index = 0;
+      }
+      setSelectedFont(font[index]);
     });
 
+
+
   const gesture = Gesture.Simultaneous(doubleTap);
-  const patternDoubleTap = Gesture.Tap().runOnJS(true)
+  const singleTap = Gesture.Tap()
+    .numberOfTaps(1)
+    .runOnJS(true)
+    .onEnd(() => {
+      router.push("/note/modal/pageStyle");
+    })
+
+  const colorDoubleTap = Gesture.Tap().runOnJS(true)
     .numberOfTaps(2)
     .onEnd(() => {
-      setBackgroundPattern((prev) => {
-        const currentIndex = bgPatterns.findIndex((pattern) => pattern.id === prev || pattern.svg === prev);
-        const nextIndex = currentIndex >= 0 && currentIndex < bgPatterns.length - 1 ? currentIndex + 1 : 0;
-        return bgPatterns[nextIndex]?.id || '';
-      });
+      const colors = isDark ? NoteColors.dark : NoteColors.light;
+      const currentIndex = colors.findIndex((colors) => colors === color);
+      const nextIndex = currentIndex >= 0 && currentIndex < colors.length - 1 ? currentIndex + 1 : 0;
+      setColor(colors[nextIndex]);
     });
+
+  const colorGesture = Gesture.Exclusive(colorDoubleTap, singleTap);
 
   const themeColors = isDark ? Colors.dark : Colors.light;
   const colors = isDark ? NoteColors.dark : NoteColors.light;
@@ -233,12 +247,7 @@ export default function NoteScreen() {
   const menuIconColor = themeColors.menuIcon;
   const deleteColor = themeColors.deleteColor;
 
-  function makeThumbnail(svg: string) {
-    return svg
-      .replace('<svg', '<svg viewBox="0 0 100 100"')
-      .replace(/width="(\d+)"/g, (_, w) => `width="${Number(w) / 2}"`)
-      .replace(/height="(\d+)"/g, (_, h) => `height="${Number(h) / 2}"`);
-  }
+
 
   if (isLoading) {
     return (
@@ -267,21 +276,28 @@ export default function NoteScreen() {
           <TouchableOpacity onPress={togglePinStatus} style={styles.iconButton}>
             <Pin color={pinned ? isActiveAction : iconColor} size={24} />
           </TouchableOpacity>
-          <GestureDetector gesture={patternDoubleTap}>
-            <TouchableOpacity
-              style={styles.iconButton}>
-              <CircleDashed color={(backgroundPattern !== "none" && backgroundPattern) ? isActiveAction : iconColor} size={24} />
-              {backgroundPattern !== "none" && backgroundPattern && <Text style={{ color: isActiveAction, fontSize: 10, marginTop: 5, textAlign: 'center', fontFamily: Typography.medium }}>{backgroundPattern}</Text>}
-            </TouchableOpacity>
-          </GestureDetector>
+          <TouchableOpacity
+            onPress={() => {
+              const currentIndex = bgPatterns.findIndex((pattern) => pattern.id === backgroundPattern || pattern.svg === backgroundPattern);
+              const nextIndex = currentIndex >= 0 && currentIndex < bgPatterns.length - 1 ? currentIndex + 1 : 0;
+              setBackgroundPattern(bgPatterns[nextIndex]?.id || '');
+            }}
+            style={styles.iconButton}>
+            <CircleDashed color={(backgroundPattern !== "none" && backgroundPattern) ? isActiveAction : iconColor} size={24} />
+            {/* {backgroundPattern !== "none" && backgroundPattern && <Text style={{ color: isActiveAction, fontSize: 10, marginTop: 5, textAlign: 'center', fontFamily: Typography.medium }}>{backgroundPattern}</Text>} */}
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => {
             router.push('/note/modal/labels');
           }} style={styles.iconButton}>
             <Tag color={iconColor} size={24} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowPalette(!showPalette)} style={styles.iconButton}>
-            <Palette color={showPalette ? isActiveAction : iconColor} size={24} />
-          </TouchableOpacity>
+          <GestureDetector gesture={colorGesture}>
+
+            <TouchableOpacity onPress={() => {
+            }} style={styles.iconButton}>
+              <Palette color={(color === "#FFFFFF" || color === "#111111") ? iconColor : isActiveAction} size={24} />
+            </TouchableOpacity>
+          </GestureDetector>
           {!isNew && (
             <TouchableOpacity onPress={() => setShowMenu(true)} style={styles.iconButton}>
               <MoreVertical color={iconColor} size={24} />
@@ -320,7 +336,6 @@ export default function NoteScreen() {
                     },
                   ]}
                   onPress={() => {
-                    // setFormatCommand(`bg:${c === colors[0] ? '' : c)}`);
                     setColor(c === colors[0] ? '' : c)
                   }
                   }
@@ -463,14 +478,14 @@ export default function NoteScreen() {
         </TouchableOpacity>
       </Modal>
 
-      <DraggableFAB
+      {showFab && <DraggableFAB
         contentWidth={dimensios.width - 80}
         fabBgColor={isDark ? 'rgba(9, 9, 9, 0.97)' : 'rgba(255, 255, 255, 0.97)'}
         fabBorderColor={isDark ? 'rgba(38, 40, 39, 0.38)' : 'rgba(0, 0, 0, 0.08)'}
         iconColor={themeColors.text}
         keyboardHeight={keyboardHeight - 100}
       >
-        {/* Format bar content — rendered inside expanded capsule */}
+
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -533,7 +548,7 @@ export default function NoteScreen() {
             </>
           )}
         </ScrollView>
-      </DraggableFAB>
+      </DraggableFAB>}
     </View>
   );
 }
